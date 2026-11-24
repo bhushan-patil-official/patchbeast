@@ -538,7 +538,12 @@
                         "type": "string",
                         "description": "OUR 2-3 line summary (original wording)"
                     },
-                    "tags": {},
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
                     "topic": {
                         "type": "string",
                         "maxLength": 30
@@ -566,6 +571,7 @@
                     "game_slug",
                     "id",
                     "source_url",
+                    "tags",
                     "title",
                     "verification"
                 ]

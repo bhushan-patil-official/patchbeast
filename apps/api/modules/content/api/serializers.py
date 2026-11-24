@@ -92,6 +92,7 @@ class VideoSerializer(serializers.ModelSerializer):
 
 
 class ArticleSerializer(serializers.ModelSerializer):
+    tags = serializers.ListField(child=serializers.CharField())
     game_slug = serializers.CharField(source="game.slug")
     game_name = serializers.CharField(source="game.name")
     verification = serializers.ChoiceField(choices=Verification.choices)

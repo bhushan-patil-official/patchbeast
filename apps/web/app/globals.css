@@ -1,0 +1,13 @@
+@import "@patchbeast/design-system/styles.css";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html { background: rgb(var(--pb-bg)); }
+body { background: rgb(var(--pb-bg)); color: rgb(var(--pb-text)); font-family: var(--font-body), system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+::selection { background: rgb(var(--pb-accent) / 0.35); }
+.prose-pb h2 { @apply mt-8 font-display text-xl font-semibold; }
+.prose-pb p, .prose-pb li { @apply mt-3 text-fg-muted leading-relaxed; }
+.prose-pb ul { @apply list-disc pl-6; }
+.prose-pb a { @apply text-accent-text underline underline-offset-2; }
+.skip-link { @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:rounded focus:bg-accent-strong focus:px-3 focus:py-2 focus:text-accent-on; }

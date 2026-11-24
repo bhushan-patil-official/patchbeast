@@ -231,7 +231,7 @@ export interface components {
             source_name?: string;
             /** @description OUR 2-3 line summary (original wording) */
             our_summary?: string;
-            tags?: unknown;
+            tags: string[];
             topic?: string;
             verification: components["schemas"]["VerificationEnum"];
             status?: components["schemas"]["StatusEnum"];

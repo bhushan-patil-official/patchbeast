@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@patchbeast/design-system";
 import { BROWSER_API_BASE } from "@/lib/api";
 
-export function NewsletterForm() {
+export function NewsletterForm({ game }: { game?: string }) {
   const [state, setState] = useState<"idle" | "loading" | "done" | "error">("idle");
 
   async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
@@ -14,7 +14,7 @@ export function NewsletterForm() {
       const r = await fetch(`${BROWSER_API_BASE}/api/v1/newsletter/subscribe/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: fd.get("email"), website: fd.get("website") ?? "" }),
+        body: JSON.stringify({ email: fd.get("email"), website: fd.get("website") ?? "", ...(game ? { game } : {}) }),
       });
       setState(r.ok ? "done" : "error");
     } catch {

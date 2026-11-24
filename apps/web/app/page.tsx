@@ -9,7 +9,7 @@ import { SITE_NAME, SITE_TAGLINE, SITE_URL } from "@/lib/site";
 
 export const revalidate = 300;
 export const metadata = pageMetadata({
-  title: "PC launch tracker: confirmed dates, patches and requirements",
+  title: "Launch tracker, PC first: confirmed dates, patches and requirements",
   description: SITE_TAGLINE,
   path: "/",
   indexable: true,
@@ -23,10 +23,10 @@ export default async function Home() {
       <section className="py-6">
         <p className="font-mono text-xs uppercase tracking-[0.22em] text-accent-text">Launch control</p>
         <h1 className="mt-2 max-w-3xl font-display text-4xl font-bold tracking-tight sm:text-5xl">
-          Every big PC launch, tracked without the noise.
+          Every big launch, tracked without the noise. PC first.
         </h1>
         <p className="mt-4 max-w-2xl text-lg text-fg-muted">
-          Release dates, patch notes, system requirements and videos. Each one carries its source and a
+          Release dates by platform, patch notes, PC system requirements and videos. Each one carries its source and a
           verification signal, so you can tell a confirmed fact from a rumour at a glance.
         </p>
       </section>

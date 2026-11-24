@@ -32,8 +32,12 @@ export const api = {
   games: () => call(() => client(["games"]).GET("/api/v1/games/")),
   hub: (slug: string) =>
     call(() => client([`game:${slug}`]).GET("/api/v1/games/{slug}/", { params: { path: { slug } } })),
-  patches: (slug: string) =>
-    call(() => client([`game:${slug}`]).GET("/api/v1/games/{slug}/patches/", { params: { path: { slug } } })),
+  patches: (slug: string, platform?: string) =>
+    call(() =>
+      client([`game:${slug}`]).GET("/api/v1/games/{slug}/patches/", {
+        params: { path: { slug }, query: platform ? { platform } : {} },
+      }),
+    ),
   videos: (slug: string) =>
     call(() => client([`game:${slug}`, "videos"]).GET("/api/v1/games/{slug}/videos/", { params: { path: { slug } } })),
   requirements: (slug: string) =>

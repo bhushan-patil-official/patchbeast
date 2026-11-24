@@ -49,7 +49,7 @@ Adding a source type or swapping a provider never touches domain code: register 
 
 ## Game-as-config
 
-A game or launch is data: `Game` + `Source` rows + `hub_config` JSON. Page templates are generic and driven by that config. No game name appears in code.
+A game or launch is data: `Game` + `Source` rows + `hub_config` JSON (tracked platforms, FAQ, SEO copy, sections) + an optional `vanity_path` for a flagship short URL. Page templates are generic and driven by that config. No game name appears in code.
 
 ## Pipeline
 

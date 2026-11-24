@@ -36,6 +36,7 @@ class ReleaseSerializer(serializers.ModelSerializer):
             "created_at",
             "countdown_mode",
         ]
+        read_only_fields = fields
 
     @extend_schema_field(serializers.ChoiceField(choices=["live", "unconfirmed"]))
     def get_countdown_mode(self, r: Release) -> str:
@@ -63,6 +64,7 @@ class ChangeSerializer(serializers.ModelSerializer):
             "verification",
             "occurred_at",
         ]
+        read_only_fields = fields
 
 
 class PatchSerializer(serializers.ModelSerializer):
@@ -81,6 +83,7 @@ class PatchSerializer(serializers.ModelSerializer):
             "source_count",
             "is_placeholder",
         ]
+        read_only_fields = fields
 
 
 class RequirementSerializer(serializers.ModelSerializer):
@@ -140,6 +143,7 @@ class GameCardSerializer(serializers.ModelSerializer):
             "latest_changes",
             "seo",
         ]
+        read_only_fields = fields
 
     @extend_schema_field(serializers.CharField())
     def get_path(self, g: Game) -> str:

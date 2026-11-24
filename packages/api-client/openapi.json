@@ -597,50 +597,51 @@
                         "type": "string"
                     },
                     "kind": {
-                        "$ref": "#/components/schemas/ChangeKindEnum"
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ChangeKindEnum"
+                            }
+                        ],
+                        "readOnly": true
                     },
                     "title": {
                         "type": "string",
-                        "maxLength": 240
+                        "readOnly": true
                     },
                     "detail": {
                         "type": "string",
-                        "description": "what changed, e.g. 'Date: unknown -> 2027-03-01'",
-                        "maxLength": 500
+                        "readOnly": true,
+                        "description": "what changed, e.g. 'Date: unknown -> 2027-03-01'"
                     },
                     "version_label": {
                         "type": "string",
-                        "maxLength": 60
+                        "readOnly": true
                     },
                     "source_url": {
-                        "oneOf": [
-                            {
-                                "type": "string",
-                                "format": "uri",
-                                "maxLength": 1000
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0
-                            }
-                        ]
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true
                     },
                     "verification": {
                         "$ref": "#/components/schemas/VerificationEnum"
                     },
                     "occurred_at": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "readOnly": true
                     }
                 },
                 "required": [
+                    "detail",
                     "game_name",
                     "game_slug",
                     "id",
                     "kind",
                     "occurred_at",
+                    "source_url",
                     "title",
-                    "verification"
+                    "verification",
+                    "version_label"
                 ]
             },
             "ChangeKindEnum": {
@@ -682,23 +683,15 @@
                 "properties": {
                     "slug": {
                         "type": "string",
-                        "maxLength": 50,
+                        "readOnly": true,
                         "pattern": "^[-a-zA-Z0-9_]+$"
                     },
                     "vanity_path": {
+                        "type": "string",
+                        "readOnly": true,
                         "nullable": true,
                         "description": "Optional short URL for a flagship page, e.g. 'gta-6-pc' -> /gta-6-pc (the /games/<slug> URL then redirects).",
-                        "oneOf": [
-                            {
-                                "type": "string",
-                                "maxLength": 60,
-                                "pattern": "^[-a-zA-Z0-9_]+$"
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0
-                            }
-                        ]
+                        "pattern": "^[-a-zA-Z0-9_]+$"
                     },
                     "path": {
                         "type": "string",
@@ -706,19 +699,19 @@
                     },
                     "name": {
                         "type": "string",
-                        "maxLength": 200
+                        "readOnly": true
                     },
                     "short_name": {
                         "type": "string",
-                        "maxLength": 80
+                        "readOnly": true
                     },
                     "tagline": {
                         "type": "string",
-                        "maxLength": 240
+                        "readOnly": true
                     },
                     "platform": {
                         "type": "string",
-                        "maxLength": 20
+                        "readOnly": true
                     },
                     "platforms": {
                         "type": "array",
@@ -729,6 +722,7 @@
                     },
                     "is_placeholder": {
                         "type": "boolean",
+                        "readOnly": true,
                         "description": "Seeded placeholder: page stays noindex until real content exists."
                     },
                     "release": {
@@ -764,14 +758,19 @@
                     }
                 },
                 "required": [
+                    "is_placeholder",
                     "latest_changes",
                     "name",
                     "path",
+                    "platform",
                     "platforms",
                     "release",
                     "releases",
                     "seo",
-                    "slug"
+                    "short_name",
+                    "slug",
+                    "tagline",
+                    "vanity_path"
                 ]
             },
             "Hub": {
@@ -938,47 +937,47 @@
                     },
                     "platform": {
                         "type": "string",
-                        "maxLength": 20
+                        "readOnly": true
                     },
                     "version": {
                         "type": "string",
-                        "maxLength": 60
+                        "readOnly": true
                     },
                     "date": {
                         "type": "string",
                         "format": "date",
+                        "readOnly": true,
                         "nullable": true
                     },
                     "notes_url": {
-                        "oneOf": [
-                            {
-                                "type": "string",
-                                "format": "uri",
-                                "maxLength": 1000
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0
-                            }
-                        ]
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true
                     },
                     "our_summary": {
-                        "type": "string"
+                        "type": "string",
+                        "readOnly": true
                     },
                     "verification": {
                         "$ref": "#/components/schemas/VerificationEnum"
                     },
                     "source_count": {
                         "type": "integer",
-                        "maximum": 32767,
-                        "minimum": 0
+                        "readOnly": true
                     },
                     "is_placeholder": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "readOnly": true
                     }
                 },
                 "required": [
+                    "date",
                     "id",
+                    "is_placeholder",
+                    "notes_url",
+                    "our_summary",
+                    "platform",
+                    "source_count",
                     "verification",
                     "version"
                 ]
@@ -1063,11 +1062,12 @@
                     },
                     "platform": {
                         "type": "string",
-                        "maxLength": 20
+                        "readOnly": true
                     },
                     "date": {
                         "type": "string",
                         "format": "date",
+                        "readOnly": true,
                         "nullable": true,
                         "description": "Empty = no date known"
                     },
@@ -1075,29 +1075,21 @@
                         "$ref": "#/components/schemas/VerificationEnum"
                     },
                     "source_url": {
-                        "oneOf": [
-                            {
-                                "type": "string",
-                                "format": "uri",
-                                "maxLength": 1000
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0
-                            }
-                        ]
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true
                     },
                     "source_count": {
                         "type": "integer",
-                        "maximum": 32767,
-                        "minimum": 0
+                        "readOnly": true
                     },
                     "note": {
                         "type": "string",
-                        "maxLength": 240
+                        "readOnly": true
                     },
                     "is_placeholder": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "readOnly": true
                     },
                     "created_at": {
                         "type": "string",
@@ -1117,7 +1109,13 @@
                     "confidence",
                     "countdown_mode",
                     "created_at",
-                    "id"
+                    "date",
+                    "id",
+                    "is_placeholder",
+                    "note",
+                    "platform",
+                    "source_count",
+                    "source_url"
                 ]
             },
             "Requirement": {

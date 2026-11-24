@@ -244,15 +244,16 @@ export interface components {
             readonly id: number;
             game_slug: string;
             game_name: string;
-            kind: components["schemas"]["ChangeKindEnum"];
-            title: string;
+            readonly kind: components["schemas"]["ChangeKindEnum"];
+            readonly title: string;
             /** @description what changed, e.g. 'Date: unknown -> 2027-03-01' */
-            detail?: string;
-            version_label?: string;
-            source_url?: string;
+            readonly detail: string;
+            readonly version_label: string;
+            /** Format: uri */
+            readonly source_url: string;
             verification: components["schemas"]["VerificationEnum"];
             /** Format: date-time */
-            occurred_at: string;
+            readonly occurred_at: string;
         };
         /**
          * @description * `release` - Release
@@ -274,17 +275,17 @@ export interface components {
             a: string;
         };
         GameCard: {
-            slug: string;
+            readonly slug: string;
             /** @description Optional short URL for a flagship page, e.g. 'gta-6-pc' -> /gta-6-pc (the /games/<slug> URL then redirects). */
-            vanity_path?: (string) | null;
+            readonly vanity_path: string | null;
             readonly path: string;
-            name: string;
-            short_name?: string;
-            tagline?: string;
-            platform?: string;
+            readonly name: string;
+            readonly short_name: string;
+            readonly tagline: string;
+            readonly platform: string;
             readonly platforms: components["schemas"]["Platform"][];
             /** @description Seeded placeholder: page stays noindex until real content exists. */
-            is_placeholder?: boolean;
+            readonly is_placeholder: boolean;
             readonly release: components["schemas"]["Release"] | null;
             readonly releases: components["schemas"]["Release"][];
             readonly latest_changes: components["schemas"]["Change"][];
@@ -329,15 +330,16 @@ export interface components {
         };
         Patch: {
             readonly id: number;
-            platform?: string;
-            version: string;
+            readonly platform: string;
+            readonly version: string;
             /** Format: date */
-            date?: string | null;
-            notes_url?: string;
-            our_summary?: string;
+            readonly date: string | null;
+            /** Format: uri */
+            readonly notes_url: string;
+            readonly our_summary: string;
             verification: components["schemas"]["VerificationEnum"];
-            source_count?: number;
-            is_placeholder?: boolean;
+            readonly source_count: number;
+            readonly is_placeholder: boolean;
         };
         PatchesPage: {
             game: components["schemas"]["GameCard"];
@@ -360,17 +362,18 @@ export interface components {
         };
         Release: {
             readonly id: number;
-            platform?: string;
+            readonly platform: string;
             /**
              * Format: date
              * @description Empty = no date known
              */
-            date?: string | null;
+            readonly date: string | null;
             confidence: components["schemas"]["VerificationEnum"];
-            source_url?: string;
-            source_count?: number;
-            note?: string;
-            is_placeholder?: boolean;
+            /** Format: uri */
+            readonly source_url: string;
+            readonly source_count: number;
+            readonly note: string;
+            readonly is_placeholder: boolean;
             /** Format: date-time */
             readonly created_at: string;
             readonly countdown_mode: components["schemas"]["CountdownModeEnum"];

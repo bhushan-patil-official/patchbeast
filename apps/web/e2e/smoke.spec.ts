@@ -8,26 +8,76 @@ test("home: launch cards, one h1, skip link, indexable", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
   await expect(page.getByRole("link", { name: "Skip to content" })).toBeAttached();
   await expect(page.getByRole("heading", { name: /Grand Theft Auto VI/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("PC first");
   expect(await robots(page)).toContain("index");
   expect(await robots(page)).not.toContain("noindex");
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /^https?:\/\/[^/]+\/?$/);
 });
 
+test("whole launch card is clickable and the long URL redirects to the flagship short URL", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("launch-card").first().getByTestId("countdown").click({ force: true }); // lands on the card-wide link overlay, not the title
+  await expect(page).toHaveURL(/\/gta-6-pc$/);
+  const res = await page.request.get("/games/gta-6-pc", { maxRedirects: 0 });
+  expect(res.status()).toBe(308);
+  expect(res.headers()["location"]).toContain("/gta-6-pc");
+});
+
+test("flagship page: per-platform rows, known/unknown, pinned FAQ, per-game signup", async ({ page }) => {
+  await page.goto("/gta-6-pc");
+  for (const p of ["pc", "ps5", "xbox_series"]) {
+    await expect(page.getByTestId(`platform-release-${p}`)).toContainText("Date unconfirmed");
+  }
+  const ku = page.getByTestId("known-unknown");
+  await expect(ku).toContainText("Not known yet");
+  await expect(ku).toContainText("PlayStation 5");
+  await expect(page.getByRole("heading", { name: "FAQ" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /Get .* changes by email/ })).toBeVisible();
+  // the page title is config-driven (hub_config.seo_title)
+  await expect(page).toHaveTitle(/Grand Theft Auto VI tracker: release dates by platform/);
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/gta-6-pc$/);
+});
+
+test("per-game newsletter signup sends the game slug", async ({ page }) => {
+  let body: Record<string, string> = {};
+  await page.route("**/api/v1/newsletter/subscribe/", async (r) => {
+    body = r.request().postDataJSON();
+    await r.fulfill({ json: { ok: true } });
+  });
+  await page.goto("/gta-6-pc");
+  await page.getByLabel("Email address").fill("fan@example.com");
+  await page.getByRole("button", { name: /weekly digest/i }).click();
+  await expect(page.getByRole("status")).toContainText("confirmation link");
+  expect(body.game).toBe("gta-6-pc");
+});
+
 test("placeholder anchor: honest 'Date unconfirmed', noindex, placeholder notice", async ({ page }) => {
-  await page.goto("/games/gta-6-pc");
+  await page.goto("/gta-6-pc");
   await expect(page.getByTestId("countdown")).toHaveAttribute("data-mode", "unconfirmed");
   await expect(page.getByTestId("countdown").getByText("Date unconfirmed")).toBeVisible();
   await expect(page.getByText("Placeholder page.")).toBeVisible();
   expect(await robots(page)).toContain("noindex");
 });
 
-test("demo hub: live countdown, signal meter, changelog, sources", async ({ page }) => {
+test("demo hub: live countdown, platform rows, signal meter, changelog, sources", async ({ page }) => {
   await page.goto("/games/demo-launch");
+  await expect(page.getByTestId("platform-release-ps5")).not.toContainText("Date unconfirmed");
   await expect(page.getByTestId("countdown")).toHaveAttribute("data-mode", "live");
   await expect(page.locator('[data-level="reported"]').first()).toBeVisible();
   await expect(page.getByRole("list", { name: "Change log" })).toBeVisible();
   await expect(page.getByRole("link", { name: /example\.com/ }).first()).toBeVisible();
   expect(await robots(page)).toContain("noindex"); // demo is allow_index=false
+});
+
+test("patches page filters by platform", async ({ page }) => {
+  await page.goto("/games/demo-launch/patches");
+  const all = await page.getByTestId("patch-item").count();
+  expect(all).toBeGreaterThanOrEqual(3);
+  await page.getByTestId("filter-ps5").click();
+  await expect(page).toHaveURL(/platform=ps5/);
+  const items = page.getByTestId("patch-item");
+  await expect(items).toHaveCount(1);
+  await expect(items.first()).toHaveAttribute("data-platform", "ps5");
 });
 
 test("requirements checker compares client-side and states caveats", async ({ page }) => {
@@ -59,7 +109,7 @@ test("/feed is noindex,nofollow and /news is curated", async ({ page, request })
 test("sitemap and robots.txt exclude raw feed and placeholders", async ({ request }) => {
   const sm = await (await request.get("/sitemap.xml")).text();
   expect(sm).not.toContain("/feed");
-  expect(sm).not.toContain("gta-6-pc");
+  expect(sm).not.toContain("gta-6-pc"); // placeholder: not in sitemap
   expect(sm).not.toContain("demo-launch");
   expect(sm).toContain("/about");
   const rb = await (await request.get("/robots.txt")).text();

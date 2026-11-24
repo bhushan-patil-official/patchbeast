@@ -8,7 +8,7 @@ export default function Page() {
     <article className="prose-pb mx-auto max-w-3xl">
       <h1 className="font-display text-3xl font-bold tracking-tight">About Patchbeast</h1>
 
-      <p>Patchbeast is a tracker and a set of tools for people watching huge PC game launches. We keep release dates, patch notes, system requirements and videos in one place, and label every item with where it came from and how well it is verified.</p>
+      <p>Patchbeast is a tracker and a set of tools for people watching huge PC game launches. We are PC-first: we keep release dates (PC first, with console dates alongside), patch notes, PC system requirements and videos in one place, and label every item with where it came from and how well it is verified.</p>
       <h2>What we do and do not do</h2>
       <ul>
         <li>We store a headline, a link to the original source and our own short summary. We do not copy or republish other sites&apos; articles.</li>

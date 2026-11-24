@@ -41,6 +41,13 @@ Admin → Sources → edit/add (always prefer official RSS/APIs; see each site's
 * **YouTube**: type `youtube`, config `{"channel_id": "UC…", "trusted_channel": false}`. Costs 1 quota unit per poll (search is never used). Set `trusted_channel: true` only for an official channel you trust to auto-publish videos.
 * Untick *is placeholder*, tick *enabled*. Use the **Fetch now** action to test. Health shows in the list.
 
+### Platforms, flagship page and per-game settings
+
+* Admin → Games → *Hub config* (JSON): `{"platforms": ["pc", "ps5", "xbox_series"], "seo_title": "...", "seo_description": "...", "faq": [...]}`. Allowed platform ids: `pc`, `ps5`, `xbox_series`, `switch2`. PC always shows first. Add a *Release* row per platform (or let sourced facts create them).
+* *Vanity path* (e.g. `gta-6-pc`) makes `/gta-6-pc` the canonical page; `/games/<slug>` redirects to it.
+* Requirements and the PC checker stay PC-only. Console patches are tracked per platform (Admin → Patches → *platform*).
+* After updating a running server: `git pull && make prod-up` (applies migrations), then `... exec api python manage.py seed` once to create the per-platform placeholder rows for the anchor (it overwrites the anchor's hub config).
+
 ### Make a page indexable (placeholder → real)
 
 Pages are `noindex` until they have real, sourced content. A hub becomes indexable automatically when it has a non-placeholder, Reported/Confirmed release date, requirements, patches, published videos or published news. Force noindex with *Game → allow index = off*.

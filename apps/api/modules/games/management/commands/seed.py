@@ -110,7 +110,7 @@ def seed_demo() -> Game:
         "ram_gb": 16, "storage_gb": 60, "cpu_ref": "amd-ryzen-5-3600", "gpu_ref": "nvidia-rtx-3060", "notes": "DEMO data",
         "source_url": "https://example.com/demo-requirements", "verification": Verification.REPORTED, "source_count": 1})  # fmt: skip
     for ver, days in [("0.9.0", 21), ("0.9.1", 7)]:
-        p, created = Patch.objects.get_or_create(game=game, version=ver, defaults={
+        p, created = Patch.objects.get_or_create(game=game, platform="pc", version=ver, defaults={
             "date": (now - timedelta(days=days)).date(), "notes_url": "https://example.com/demo-patch",
             "our_summary": f"DEMO: sample patch {ver} fixing placeholder issues.", "verification": Verification.CONFIRMED, "source_count": 2})  # fmt: skip
         if created:

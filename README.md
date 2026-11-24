@@ -4,6 +4,8 @@
 It is a **tracker and tools site, not a scraper or republisher**: we store a title, the source URL, *our own* 2-3 line summary and tags, and always link and attribute the source.
 
 * Verification you can see: **Confirmed** (two independent sources or a video) · **Reported** (one source) · **Rumour**.
+* Release status **per platform** (PC first, plus PS5 / Xbox Series), patches per platform, PC-only requirements and checker.
+* A flagship page per game with a short URL (e.g. `/gta-6-pc`): countdown, per-platform dates, "what we know / what we don't", FAQ, per-game email signup.
 * A countdown that never lies: it freezes to *Date unconfirmed* for rumours and placeholders.
 * Raw feeds and placeholder pages are `noindex`; only curated and tool pages are indexable.
 * Built to run unattended (2-4 h/week owner time): review queue, alerts, daily LLM spend cap, kill switch, nightly backups.

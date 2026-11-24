@@ -8,7 +8,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: { default: `${SITE_NAME}: PC launch tracker`, template: `%s · ${SITE_NAME}` },
+  title: { default: `${SITE_NAME}: launch tracker, PC first`, template: `%s · ${SITE_NAME}` },
   description: SITE_TAGLINE,
   applicationName: SITE_NAME,
   alternates: { canonical: "/" },

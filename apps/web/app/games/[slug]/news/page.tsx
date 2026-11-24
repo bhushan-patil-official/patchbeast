@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { NewsCard, Degraded, PlaceholderNotice } from "@/components/Cards";
+import { StoryCard } from "@/components/StoryCard";
 import { Breadcrumbs, GameNav } from "@/components/GameNav";
 import { api } from "@/lib/api";
 import { pageMetadata } from "@/lib/seo";
@@ -30,7 +31,7 @@ export default async function GameNews({ params, searchParams }: Props) {
     if (hub.status === 404) notFound();
     throw new Error("API unavailable");
   }
-  const news = await api.news(page, slug);
+  const [news, stories] = await Promise.all([api.news(page, slug), api.stories(slug)]);
   const { game, seo } = hub.data;
   return (
     <>
@@ -39,6 +40,14 @@ export default async function GameNews({ params, searchParams }: Props) {
       <h1 className="font-display text-3xl font-bold tracking-tight">{game.name}: news</h1>
       <p className="mt-2 max-w-prose text-fg-muted">Curated items only: a person approved each one. We write our own summary and always link the original source.</p>
       <GameNav game={game} current="news" />
+      {stories.ok && stories.data.results.length > 0 && (
+        <section aria-labelledby="briefings-h" className="mb-8">
+          <h2 id="briefings-h" className="font-display text-xl font-semibold">Briefings</h2>
+          <p className="mb-3 text-sm text-fg-muted">Our own write-ups, each built from two or more linked sources and reviewed by a person.</p>
+          <div className="space-y-3">{stories.data.results.map((s) => <StoryCard key={s.id} s={s} />)}</div>
+        </section>
+      )}
+      <h2 className="mb-3 font-display text-xl font-semibold">Linked news</h2>
       <div className="space-y-4">
         {news.ok ? (
           news.data.results.length ? news.data.results.map((a) => <NewsCard key={a.id} a={a} />) : <p className="text-fg-muted">No curated news for this game yet.</p>

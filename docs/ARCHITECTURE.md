@@ -66,6 +66,8 @@ beat (every minute) -> ingest.poll_due_sources -> ingest.fetch_source(source_id)
  -> on publish: transaction.on_commit -> publish.revalidate (Next ISR webhook)           [queue publish]
 ```
 
+Story drafting (ADR 0008): `llm.build_stories` (beat, every 6 h) -> cluster similar articles (>= 2 independent domains) -> `llm/writer.py` drafts an original, cited briefing from OUR summaries and verified facts -> `Story(status=draft)` -> human approval in the review queue -> publish + revalidation. No auto-publish of prose.
+
 Verification model (`content.services.verification`): **Confirmed** = two independent sources (distinct registrable domains) or a video; **Reported** = one linked source; **Rumour/Unverified** = anything else. Evidence rows are generic (`subject_kind` + `subject_id`), so later tiers attach evidence without schema changes to Phase 1 tables.
 
 ## Safeguards

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { NewsCard, Degraded } from "@/components/Cards";
+import { StoryCard } from "@/components/StoryCard";
 import { api } from "@/lib/api";
 import { pageMetadata } from "@/lib/seo";
 
@@ -20,12 +21,19 @@ export async function generateMetadata({ searchParams }: { searchParams: Promise
 
 export default async function News({ searchParams }: { searchParams: Promise<{ page?: string }> }) {
   const page = Math.max(1, Number((await searchParams).page) || 1);
-  const r = await api.news(page);
+  const [r, stories] = await Promise.all([api.news(page), api.stories()]);
   return (
     <>
       <h1 className="font-display text-3xl font-bold tracking-tight">News</h1>
       <p className="mt-2 max-w-prose text-fg-muted">Curated items only: a human approved each one. We write our own summary and always link the original source.</p>
-      <div className="mt-6 space-y-4">
+      {stories.ok && stories.data.results.length > 0 && (
+        <section aria-labelledby="briefings-h" className="mt-6">
+          <h2 id="briefings-h" className="font-display text-xl font-semibold">Briefings</h2>
+          <div className="mt-3 space-y-3">{stories.data.results.map((s) => <StoryCard key={s.id} s={s} />)}</div>
+        </section>
+      )}
+      <h2 className="mt-8 font-display text-xl font-semibold">Linked news</h2>
+      <div className="mt-3 space-y-4">
         {r.ok ? (
           r.data.results.length ? r.data.results.map((a) => <NewsCard key={a.id} a={a} />) : <p className="text-fg-muted">No curated news yet.</p>
         ) : <Degraded what="News" />}

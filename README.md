@@ -6,6 +6,7 @@ It is a **tracker and tools site, not a scraper or republisher**: we store a tit
 * Verification you can see: **Confirmed** (two independent sources or a video) · **Reported** (one source) · **Rumour**.
 * Release status **per platform** (PC first, plus PS5 / Xbox Series), patches per platform, PC-only requirements and checker.
 * Each game has its own pages: overview, patches & updates (a page per update, with highlights, size and sources), news, videos, PC requirements and a full timeline.
+* **Briefings**: similar reports are grouped automatically and an original, cited write-up is drafted for you to approve in one click (never auto-published).
 * A flagship page per game with a short URL (e.g. `/gta-6-pc`): countdown, per-platform dates, "what we know / what we don't", FAQ, per-game email signup.
 * A countdown that never lies: it freezes to *Date unconfirmed* for rumours and placeholders.
 * Raw feeds and placeholder pages are `noindex`; only curated and tool pages are indexable.

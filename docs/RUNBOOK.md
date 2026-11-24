@@ -60,6 +60,15 @@ $C exec api python manage.py load_pack gta6             # loads it (idempotent)
 
 **Verify first.** The pack was compiled from search-result snippets; open each source and check dates, versions, sizes and wording (and the publisher's own support page for official notes) before loading. Afterwards edit or delete anything wrong in Admin → Patches / Releases / Articles. A page becomes indexable automatically once it has real, sourced content. To add your own pack, copy `gta6.json` and follow its structure.
 
+### Automated briefings (story drafts)
+
+Every 6 hours the system groups similar articles about the same development (needs two independent outlets) and drafts a short, cited briefing for your review. Nothing is published until you approve it.
+
+* Turn off: Admin → Feature flags → `stories` (or `FEATURE_STORIES=false`). The kill switch and the daily LLM cap also stop it.
+* Tune: `STORY_MAX_PER_DAY` (default 5), `STORY_SIMILARITY` (higher = stricter grouping), `STORY_WINDOW_DAYS`.
+* Needs `ANTHROPIC_API_KEY` and articles that already have our summary (i.e. classified or edited items in the queue/published).
+* Rejecting a draft frees its articles; the same group is not drafted again.
+
 ### Game sections
 
 Each game has its own pages: Overview, Patches & updates (a page per update), News, Videos, PC requirements, Timeline. Patch highlights/size are edited in Admin → Patches. A patch page stays `noindex` until it has at least one source and a summary or highlights.
@@ -124,7 +133,7 @@ Migrations are additive; if a bad migration ran, restore the nightly backup (§4
 
 ## 6. Weekly checklist (2-4 h)
 
-1. **Review queue (30-90 min)**: `/admin/review/`. Keys: `j/k` move, `e` edit, `a` approve, `r` reject, `s` save. Write/keep *our* summary only. Check the "why queued" reason. Reject duplicates and rumours you can't source.
+1. **Review queue (30-90 min)**: `/admin/review/` (articles, **story drafts**, videos). For each story draft open the numbered sources and check every claim against them; edit paragraphs freely (citations stay attached); reject anything you can't verify. Keys: `j/k` move, `e` edit, `a` approve, `r` reject, `s` save. Write/keep *our* summary only. Check the "why queued" reason. Reject duplicates and rumours you can't source.
 2. **Fetcher health (10 min)**: Admin → Sources, sort by health. Fix/replace failing feeds. Admin → Fetch logs for anomalies.
 3. **Spend (5 min)**: Admin → Site settings and LLM usage. Raise/lower `daily_llm_cap` if needed.
 4. **Alerts (5 min)**: skim Alert events; clear root causes.

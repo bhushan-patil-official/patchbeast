@@ -211,3 +211,29 @@ test("countdown switches to 'Released' once the date has passed", async ({ page 
   await expect(page.getByTestId("countdown")).toHaveAttribute("data-mode", "released");
   await expect(page.getByTestId("countdown")).toContainText("Released");
 });
+
+test("briefings: listed on news pages and hub, detail has citations, sources and AI disclosure", async ({ page }) => {
+  await page.goto("/games/demo-launch/news");
+  await expect(page.getByRole("heading", { name: "Briefings" })).toBeVisible();
+  const card = page.getByTestId("story-card").first();
+  await expect(card).toContainText("Briefing");
+  await expect(card).toContainText("Confirmed");
+  await card.getByRole("heading").click({ force: true }); // card-wide link
+  await expect(page).toHaveURL(/\/games\/demo-launch\/news\/demo-briefing-sample$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("DEMO briefing");
+  const body = page.getByTestId("story-body");
+  await expect(body.locator("p")).toHaveCount(2);
+  await expect(body.getByRole("link", { name: "Source 2" }).first()).toHaveAttribute("href", "#src-2");
+  await expect(page.getByTestId("story-sources").locator("li")).toHaveCount(2);
+  await expect(page.getByTestId("story-disclosure")).toContainText("drafted by an AI assistant");
+  await expect(page.getByTestId("story-disclosure")).toContainText("approved by a person");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/); // demo game
+  await page.goto("/news");
+  await expect(page.getByRole("heading", { name: "Briefings" })).toBeVisible();
+  await page.goto("/games/demo-launch");
+  await expect(page.getByTestId("story-card")).toHaveCount(1);
+});
+
+test("unknown briefing is a 404", async ({ page }) => {
+  expect((await page.goto("/games/demo-launch/news/does-not-exist"))?.status()).toBe(404);
+});

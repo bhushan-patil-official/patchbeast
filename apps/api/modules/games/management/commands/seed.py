@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from modules.common.choices import Verification
 from modules.content import services as content
-from modules.content.models import Article, Change, Patch, Requirement, SubjectKind, Video
+from modules.content.models import Article, Change, Patch, Requirement, Story, SubjectKind, Video
 from modules.games.models import Game, Release
 from modules.platform.models import FeatureFlag, SiteSetting
 from modules.sources.models import Source
@@ -149,6 +149,24 @@ def seed_demo() -> Game:
             content.record_change(game, Change.Kind.NEWS, a.title, detail=a.our_summary, source_url=a.source_url,
                                   verification=Verification.REPORTED, subject_kind=SubjectKind.ARTICLE, subject_id=a.pk,
                                   occurred_at=a.published_at)  # fmt: skip
+    Story.objects.get_or_create(
+        game=game, slug="demo-briefing-sample",
+        defaults={
+            "title": "DEMO briefing: what two sample sources say about patch 0.9.1",
+            "dek": "A sample of the briefings Patchbeast drafts from two or more linked reports and a person reviews.",
+            "blocks": [
+                {"text": "DEMO: this is a sample paragraph showing how a briefing reads. It summarises what the first linked source reports about patch 0.9.1 in our own words.", "sources": [0]},
+                {"text": "DEMO: a second paragraph explains where the second linked source agrees or differs, so readers can see how well the claim is supported.", "sources": [1, 0]},
+            ],
+            "key_points": ["DEMO: sample key point one", "DEMO: sample key point two"],
+            "sources": [
+                {"article_id": 0, "url": "https://example.com/demo-news-1", "name": "example.com", "title": "DEMO headline 1"},
+                {"article_id": 0, "url": "https://example.org/demo-news-2", "name": "example.org", "title": "DEMO headline 2"},
+            ],
+            "tags": ["demo"], "cluster_key": "demo-cluster", "status": Story.Status.PUBLISHED,
+            "verification": Verification.CONFIRMED, "model": "demo", "published_at": now - timedelta(days=1),
+        },
+    )  # fmt: skip
     return game
 
 

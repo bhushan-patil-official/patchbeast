@@ -109,7 +109,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        get: operations["v1_games_patches_retrieve_2"];
+        get: operations["game_patch_detail"];
         put?: never;
         post?: never;
         delete?: never;
@@ -753,7 +753,7 @@ export interface operations {
             };
         };
     };
-    v1_games_patches_retrieve_2: {
+    game_patch_detail: {
         parameters: {
             query?: never;
             header?: never;

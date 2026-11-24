@@ -49,6 +49,18 @@ export const api = {
         params: { query: game ? { page, game } : { page } },
       }),
     ),
+  stories: (game?: string, page = 1) =>
+    call(() =>
+      client(game ? ["stories", `game:${game}`] : ["stories"]).GET("/api/v1/stories/", {
+        params: { query: game ? { page, game } : { page } },
+      }),
+    ),
+  story: (slug: string, story: string) =>
+    call(() =>
+      client([`game:${slug}`, "stories"]).GET("/api/v1/games/{slug}/stories/{story}/", {
+        params: { path: { slug, story } },
+      }),
+    ),
   patch: (slug: string, platform: string, version: string) =>
     call(() =>
       client([`game:${slug}`]).GET("/api/v1/games/{slug}/patches/{platform}/{version}/", {

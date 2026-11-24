@@ -226,7 +226,7 @@
         },
         "/api/v1/games/{slug}/patches/{platform}/{version}/": {
             "get": {
-                "operationId": "v1_games_patches_retrieve_2",
+                "operationId": "game_patch_detail",
                 "parameters": [
                     {
                         "in": "path",

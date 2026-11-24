@@ -132,7 +132,7 @@ def sitemap(request):
     return Response(s.SitemapEntrySerializer(selectors.sitemap_entries(), many=True).data)
 
 
-@extend_schema(responses=s.PatchDetailSerializer, tags=["games"])
+@extend_schema(operation_id="game_patch_detail", responses=s.PatchDetailSerializer, tags=["games"])
 @api_view(["GET"])
 def patch_detail(request, slug: str, platform: str, version: str):
     g = _game_or_404(slug)

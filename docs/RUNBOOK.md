@@ -171,6 +171,7 @@ Keep api/worker/beat/postgres/redis on the VPS; deploy only the Next.js app to V
 |---|---|
 | Items stuck in "new" | worker unhealthy or kill switch on; `ingest.requeue_stuck` moves them to review after 30 min |
 | Everything lands in review with "LLM unavailable" | `ANTHROPIC_API_KEY` missing, spend cap reached, or kill switch on |
+| Approved/published but not on the site | publishing in Admin now refreshes the site automatically; if it still looks stale: Admin -> Alert events (`revalidate_failed`), the worker `publish` queue, `REVALIDATE_URL`/`REVALIDATE_SECRET` mismatch; then run `... exec api python manage.py revalidate_all` or Admin -> Site settings -> *Refresh all public pages now* |
 | Publish doesn't show on site | worker `publish` queue; `REVALIDATE_URL`/`REVALIDATE_SECRET` mismatch (alert fires after retries); pages self-heal within 5 min anyway |
 | 502 from Caddy | `docker compose ps`; api healthcheck; `logs api` (JSON logs carry `request_id`) |
 | Source "failing" | Admin → Sources → *last error*; 404/410 auto-disables after two tries |

@@ -1,3 +1,4 @@
+from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.decorators import api_view
@@ -111,7 +112,9 @@ class NewsList(generics.ListAPIView):
     serializer_class = s.ArticleSerializer
 
     def get_queryset(self):
-        qs = selectors.published_articles().order_by("-published_at")
+        qs = selectors.published_articles().order_by(
+            F("published_at").desc(nulls_last=True), "-created_at"
+        )
         game = self.request.query_params.get("game")
         return qs.filter(game__slug=game) if game else qs
 

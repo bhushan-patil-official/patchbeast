@@ -337,3 +337,34 @@ def approve_video(video: Video, user) -> None:
     video.updated_by = user
     video.save()
     publish_video_side_effects(video)
+
+
+def revalidate_everything() -> int:
+    """Schedule a refresh of every public page (tags + paths in chunks the web endpoint accepts)."""
+    tags = ["games", "ticker", "news", "stories", "videos", "sitemap", "config"]
+    paths = [
+        "/",
+        "/news",
+        "/feed",
+        "/about",
+        "/contact",
+        "/privacy",
+        "/terms",
+        "/affiliate-disclosure",
+    ]
+    for g in Game.objects.all():
+        tags.append(f"game:{g.slug}")
+        paths += [
+            f"/games/{g.slug}",
+            *(
+                f"/games/{g.slug}/{s}"
+                for s in ("news", "patches", "videos", "requirements", "timeline")
+            ),
+        ]
+        if g.vanity_path:
+            paths.append(f"/{g.vanity_path}")
+    chunks = 0
+    for i in range(0, max(len(tags), len(paths)), 40):
+        request_revalidation(tags[i : i + 40], paths[i : i + 40])
+        chunks += 1
+    return chunks

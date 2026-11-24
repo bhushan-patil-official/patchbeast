@@ -1,6 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
+from django.utils import timezone
 
 from modules.common.choices import Verification
 from modules.common.models import AuditModel
@@ -57,6 +58,11 @@ class Article(AuditModel):
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
+
+    def save(self, *args, **kwargs):
+        if self.status == self.Status.PUBLISHED and self.published_at is None:
+            self.published_at = timezone.now()  # never leave a public item without a date
+        super().save(*args, **kwargs)
 
     class Meta:
         ordering = ["-created_at"]

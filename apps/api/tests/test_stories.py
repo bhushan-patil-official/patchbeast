@@ -288,7 +288,9 @@ def test_approve_with_edit_publishes_and_records_change(
     assert Change.objects.filter(
         subject_kind="story", subject_id=draft_story.pk, is_public=True
     ).exists()
-    assert sent and f"/games/{draft_story.game.slug}/news/{draft_story.slug}" in sent[0][1]
+    assert any(
+        f"/games/{draft_story.game.slug}/news/{draft_story.slug}" in paths for _tags, paths in sent
+    )
 
 
 def test_reject_frees_articles_for_reclustering(client, user, draft_story, game):

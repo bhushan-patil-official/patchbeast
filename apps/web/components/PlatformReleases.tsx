@@ -4,6 +4,8 @@ import type { Schemas } from "@/lib/api";
 const fmt = (d: string) =>
   new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "2-digit", timeZone: "UTC" }).format(new Date(`${d}T00:00:00Z`));
 
+const isPast = (d: string) => new Date(`${d}T23:59:59Z`).getTime() < Date.now();
+
 /** One row per tracked platform (PC first). A date is only shown when it is Reported/Confirmed and sourced. */
 export function PlatformReleases({
   releases,
@@ -29,7 +31,7 @@ export function PlatformReleases({
             <span className="font-display font-medium">{p.name}</span>
             <span className="flex flex-wrap items-center gap-2">
               {live ? (
-                <time dateTime={r!.date!} className="font-mono text-sm">{fmt(r!.date!)}</time>
+                <time dateTime={r!.date!} className="font-mono text-sm">{isPast(r!.date!) ? `Released ${fmt(r!.date!)}` : fmt(r!.date!)}</time>
               ) : (
                 <span className="font-mono text-xs uppercase tracking-wider text-signal-rumour">Date unconfirmed</span>
               )}

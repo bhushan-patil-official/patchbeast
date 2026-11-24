@@ -156,3 +156,58 @@ test("footer sticks to the bottom of the viewport on short pages (desktop)", asy
   expect(Math.round(box!.y + box!.height)).toBeGreaterThanOrEqual(1100 - 1);
   expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(1100);
 });
+
+test("every game page has section navigation; each section has its own page", async ({ page }) => {
+  await page.goto("/games/demo-launch");
+  const nav = page.getByTestId("game-nav");
+  for (const label of ["Overview", "Patches & updates", "News", "Videos", "PC requirements", "Timeline"]) {
+    await expect(nav.getByRole("link", { name: label })).toBeVisible();
+  }
+  for (const [label, url] of [["Patches & updates", /\/patches$/], ["News", /\/news$/], ["Timeline", /\/timeline$/], ["Videos", /\/videos$/]] as const) {
+    await page.goto("/games/demo-launch");
+    await page.getByTestId("game-nav").getByRole("link", { name: label }).click();
+    await expect(page).toHaveURL(url);
+    await expect(page.getByTestId("game-nav").getByRole("link", { name: label })).toHaveAttribute("aria-current", "page");
+    await expect(page.getByRole("navigation", { name: "Breadcrumb" })).toBeVisible();
+  }
+});
+
+test("patch detail page: highlights, size, two sources, sibling platform, back link", async ({ page }) => {
+  await page.goto("/games/demo-launch/patches?platform=ps5");
+  await page.getByRole("link", { name: "Update details →" }).first().click();
+  await expect(page).toHaveURL(/\/patches\/ps5\/0\.9\.1$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("update 0.9.1");
+  await expect(page.getByTestId("patch-highlights").locator("li")).toHaveCount(3);
+  await expect(page.getByTestId("patch-meta")).toContainText("Size: DEMO 1.2 GB");
+  await expect(page.getByTestId("patch-sources").getByRole("link")).toHaveCount(2); // 2 independent sources; the notes link is the same site, so not repeated
+  await expect(page.getByText("Official notes")).toHaveCount(0); // never claim "official" without knowing
+  await expect(page.getByText("Confirmed: reported by 2 independent sources")).toBeVisible();
+  await page.getByRole("link", { name: "PC", exact: true }).click(); // same version on another platform
+  await expect(page).toHaveURL(/\/patches\/pc\/0\.9\.1$/);
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/); // demo game
+  await expect(page.getByRole("link", { name: "← All patches & updates" })).toBeVisible();
+});
+
+test("per-game news and timeline pages", async ({ page }) => {
+  await page.goto("/games/demo-launch/news");
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("news");
+  await expect(page.getByRole("heading", { name: /DEMO headline/ })).toHaveCount(2);
+  await page.goto("/games/demo-launch/timeline");
+  await expect(page.getByRole("list", { name: "Change log" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Patch 0.9.1" })).toBeVisible();
+});
+
+test("unknown patch is a 404 and breadcrumbs carry JSON-LD", async ({ page }) => {
+  const r = await page.goto("/games/demo-launch/patches/pc/9.9.9");
+  expect(r?.status()).toBe(404);
+  await page.goto("/games/demo-launch/news");
+  const ld = await page.locator('script[type="application/ld+json"]').allTextContents();
+  expect(ld.some((t) => t.includes("BreadcrumbList"))).toBe(true);
+});
+
+test("countdown switches to 'Released' once the date has passed", async ({ page }) => {
+  await page.clock.install({ time: new Date(Date.now() + 400 * 86_400_000) });
+  await page.goto("/games/demo-launch");
+  await expect(page.getByTestId("countdown")).toHaveAttribute("data-mode", "released");
+  await expect(page.getByTestId("countdown")).toContainText("Released");
+});

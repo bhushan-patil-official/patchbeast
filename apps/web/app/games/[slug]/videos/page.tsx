@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { Section } from "@patchbeast/design-system";
 import { PlaceholderNotice } from "@/components/Cards";
+import { Breadcrumbs, GameNav } from "@/components/GameNav";
 import { VideoEmbed } from "@/components/VideoEmbed";
 import { api } from "@/lib/api";
 import { pageMetadata } from "@/lib/seo";
@@ -37,7 +38,9 @@ export default async function VideosPage({ params }: Props) {
   return (
     <>
       <PlaceholderNotice show={!seo.indexable} />
+      <Breadcrumbs crumbs={[{ name: "Launches", href: "/" }, { name: game.name, href: game.path }, { name: "Videos" }]} />
       <h1 className="font-display text-3xl font-bold tracking-tight">{game.name}: trailers &amp; videos</h1>
+      <GameNav game={game} current="videos" />
       <Section title="Videos" id="videos">
         {items.length ? (
           <div className="grid gap-5 md:grid-cols-2">

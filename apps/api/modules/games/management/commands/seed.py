@@ -21,7 +21,7 @@ def seed_anchor() -> Game:
         defaults={
             "name": "Grand Theft Auto VI",
             "short_name": "GTA VI",
-            "tagline": "Release status by platform, patches and updates (PC first). Placeholder until sourced content is loaded.",
+            "tagline": "Release status by platform, patches and updates. PC first.",
             "platform": "pc",
             "is_placeholder": True,
             "vanity_path": ANCHOR,
@@ -56,7 +56,10 @@ def seed_anchor() -> Game:
     for plat in game.platforms:
         if not Release.objects.filter(game=game, platform=plat, is_current=True).exists():
             Release.objects.create(game=game, platform=plat, date=None, confidence=Verification.RUMOUR, is_placeholder=True,
-                                   note="PLACEHOLDER: no release date has been verified.")  # fmt: skip
+                                   note="No verified release date yet.")  # fmt: skip
+    Release.objects.filter(game=game, is_placeholder=True, date__isnull=True).update(
+        note="No verified release date yet."
+    )
     for tier in ("min", "rec"):
         Requirement.objects.get_or_create(game=game, platform="pc", tier=tier,
                                           defaults={"is_placeholder": True, "notes": "PLACEHOLDER: requirements not published."})  # fmt: skip

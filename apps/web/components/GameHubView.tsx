@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Metadata } from "next";
 import { ChangeLog, Countdown, ExplainedSignalMeter, Section, SignalMeter, SourceChip, SpecCompare } from "@patchbeast/design-system";
 import { NewsCard, PlaceholderNotice, toEntry, toTier } from "@/components/Cards";
+import { GameNav } from "@/components/GameNav";
 import { JsonLd } from "@/components/JsonLd";
 import { KnownUnknown } from "@/components/KnownUnknown";
 import { HardwareBlock, HubAd } from "@/components/Monetization";
@@ -67,6 +68,8 @@ export function GameHubView({ h }: { h: Schemas["Hub"] }) {
         {multi && <div className="mx-auto mt-8 max-w-2xl"><PlatformReleases releases={h.releases} platforms={h.platforms} /></div>}
       </header>
 
+      <GameNav game={h.game} current="overview" />
+
       <KnownUnknown h={h} />
 
       {h.faq.length > 0 && (
@@ -83,7 +86,7 @@ export function GameHubView({ h }: { h: Schemas["Hub"] }) {
       <NewsletterBlock game={{ slug, name: h.game.name }} />
 
       {show("release") && (
-        <Section eyebrow="Timeline" title="Change log" id="changes">
+        <Section eyebrow="Timeline" title="Change log" id="changes" actions={<Link href={`/games/${slug}/timeline`} className="text-sm text-accent-text underline">Full timeline →</Link>}>
           <ChangeLog entries={h.changes.map(toEntry)} />
         </Section>
       )}
@@ -95,13 +98,13 @@ export function GameHubView({ h }: { h: Schemas["Hub"] }) {
       )}
 
       {show("patches") && (
-        <Section eyebrow="Patch notes" title="Latest patches" id="patches" actions={<Link href={`/games/${slug}/patches`} className="text-sm text-accent-text underline">All patches →</Link>}>
+        <Section eyebrow="Patch notes" title="Latest patches & updates" id="patches" actions={<Link href={`/games/${slug}/patches`} className="text-sm text-accent-text underline">All patches →</Link>}>
           {h.patches.length ? (
             <ul className="space-y-3">
               {h.patches.map((p) => (
                 <li key={p.id} className="rounded-lg border border-line bg-surface-1 p-4">
                   <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded border border-accent/50 bg-accent/10 px-1.5 py-0.5 font-mono text-xs text-accent-text">v{p.version}</span>
+                    <Link href={`/games/${slug}/patches/${p.platform}/${encodeURIComponent(p.version)}`} className="pb-focus rounded border border-accent/50 bg-accent/10 px-1.5 py-0.5 font-mono text-xs text-accent-text hover:bg-accent/20">v{p.version}</Link>
                     {multi && <span className="rounded border border-line px-1.5 py-0.5 font-mono text-[10px] uppercase text-fg-muted">{platformShort(p.platform)}</span>}
                     {p.date && <time dateTime={p.date} className="font-mono text-xs text-fg-muted">{p.date}</time>}
                     <SignalMeter level={p.verification} sources={p.source_count} size="sm" />

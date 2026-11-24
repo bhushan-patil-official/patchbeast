@@ -48,6 +48,22 @@ Admin → Sources → edit/add (always prefer official RSS/APIs; see each site's
 * Requirements and the PC checker stay PC-only. Console patches are tracked per platform (Admin → Patches → *platform*).
 * After updating a running server: `git pull && make prod-up` (applies migrations), then `... exec api python manage.py seed` once to create the per-platform placeholder rows for the anchor (it overwrites the anchor's hub config).
 
+### Load starter content (patches, release dates, news) from a content pack
+
+A pack is a JSON file of sourced items (`apps/api/content_packs/`). The bundled `gta6` pack holds the launch releases, three reported updates (01.002.000 / .001 / .002) and two news items, every one linking its sources.
+
+```bash
+C="docker compose -f docker-compose.yml -f docker-compose.prod.yml"
+$C exec api python manage.py load_pack gta6 --dry-run   # shows what it would create; saves nothing
+$C exec api python manage.py load_pack gta6             # loads it (idempotent)
+```
+
+**Verify first.** The pack was compiled from search-result snippets; open each source and check dates, versions, sizes and wording (and the publisher's own support page for official notes) before loading. Afterwards edit or delete anything wrong in Admin → Patches / Releases / Articles. A page becomes indexable automatically once it has real, sourced content. To add your own pack, copy `gta6.json` and follow its structure.
+
+### Game sections
+
+Each game has its own pages: Overview, Patches & updates (a page per update), News, Videos, PC requirements, Timeline. Patch highlights/size are edited in Admin → Patches. A patch page stays `noindex` until it has at least one source and a summary or highlights.
+
 ### Make a page indexable (placeholder → real)
 
 Pages are `noindex` until they have real, sourced content. A hub becomes indexable automatically when it has a non-placeholder, Reported/Confirmed release date, requirements, patches, published videos or published news. Force noindex with *Game → allow index = off*.

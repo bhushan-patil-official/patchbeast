@@ -38,6 +38,7 @@ class Env(BaseSettings):
     email_host_user: str = ""
     email_host_password: str = ""
     email_use_tls: bool = False
+    email_use_ssl: bool = False
     default_from_email: str = "Patchbeast <hello@patchbeast.com>"
     contact_email: str = "hello@patchbeast.com"
 

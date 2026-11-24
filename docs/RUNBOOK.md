@@ -8,7 +8,7 @@ Owner time budget: **2-4 hours/week**. Everything runs unattended; you review, c
 |---|---|---|
 | api, worker, beat, postgres, redis, caddy, backup | one small VPS (Hetzner CX22 ≈ $5-7/mo) | `docker-compose.prod.yml` |
 | web (Next.js) | same VPS (Docker) **or** Vercel | see §7 |
-| Email | any SMTP (Brevo/Mailgun/SES/Resend SMTP; free tiers are enough) | `EMAIL_*` |
+| Email | Resend (or any SMTP provider) | `EMAIL_*` |
 | LLM | Anthropic, Claude Haiku 5.5 | daily cap default $1 (≈ pennies in practice) |
 
 ## 1. First deploy (VPS)
@@ -67,6 +67,26 @@ Each game has its own pages: Overview, Patches & updates (a page per update), Ne
 ### Make a page indexable (placeholder → real)
 
 Pages are `noindex` until they have real, sourced content. A hub becomes indexable automatically when it has a non-placeholder, Reported/Confirmed release date, requirements, patches, published videos or published news. Force noindex with *Game → allow index = off*.
+
+### Email with Resend (newsletter + alerts)
+
+1. Create a Resend account, **add and verify your domain** (it gives you SPF/DKIM DNS records; add them at your DNS provider and wait until Resend shows *Verified*). Add a DMARC `TXT` record at `_dmarc` too.
+2. Create an API key (sending access) in Resend.
+3. In `.env` on the server:
+   ```
+   EMAIL_HOST=smtp.resend.com
+   EMAIL_PORT=587
+   EMAIL_USE_TLS=true
+   EMAIL_USE_SSL=false
+   EMAIL_HOST_USER=resend
+   EMAIL_HOST_PASSWORD=<your re_... API key>
+   DEFAULT_FROM_EMAIL=Patchbeast <hello@yourdomain>
+   ```
+   (Implicit TLS alternative: `EMAIL_PORT=465`, `EMAIL_USE_TLS=false`, `EMAIL_USE_SSL=true`. Use 465 if your host blocks 587.)
+4. `make prod-up`, then test: `docker compose -f docker-compose.yml -f docker-compose.prod.yml exec api python manage.py sendtestemail you@example.com`.
+5. Check Resend's current plan limits (daily/monthly sends, rate): the digest sends one email per subscriber and is throttled to 60/min by the worker.
+
+The `From` address must belong to the verified domain, otherwise Resend rejects the message. Mailpit remains the **dev-only** mail catcher (`docker-compose.dev.yml`); the prod stack has no Mailpit.
 
 ## 2. Updating
 

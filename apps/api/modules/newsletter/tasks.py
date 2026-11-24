@@ -22,6 +22,7 @@ def send_weekly_digest() -> int:
 
 @shared_task(
     name="mail.send_digest_to_subscriber",
+    rate_limit="60/m",  # stay well inside email-provider rate limits; retries back off on errors
     base=AlertingTask,
     bind=True,
     max_retries=4,

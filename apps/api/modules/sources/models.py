@@ -18,7 +18,10 @@ class Source(AuditModel):
         DEGRADED = "degraded", "Degraded"
         FAILING = "failing", "Failing"
 
-    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="sources")
+    game = models.ForeignKey(
+        Game, null=True, blank=True, on_delete=models.CASCADE, related_name="sources",
+        help_text="Leave empty for a GENERAL feed covering several games: articles are matched to games automatically.",
+    )  # fmt: skip
     name = models.CharField(max_length=120)
     type = models.CharField(max_length=10, choices=Type.choices, default=Type.RSS)
     url = models.URLField(max_length=1000, blank=True)

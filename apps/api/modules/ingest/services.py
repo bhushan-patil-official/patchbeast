@@ -8,6 +8,7 @@ from dataclasses import dataclass, field
 from datetime import timedelta
 
 from django.conf import settings
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 
 from llm.classify import Classification, ClassificationFailed, ItemForLLM, classify
@@ -18,6 +19,7 @@ from modules.common.urlutils import normalise_url, registrable_domain
 from modules.content import services as content
 from modules.content.models import Article, SubjectKind
 from modules.games.models import Game
+from modules.games.services import alias_terms, match_games
 from modules.platform import services as platform
 from modules.sources import services as source_services
 from modules.sources.models import Source
@@ -54,13 +56,15 @@ def hamming(a: int, b: int) -> int:
     return bin(a ^ b).count("1")
 
 
-def find_near_duplicate(game: Game, h: int, window_days: int = 30) -> Article | None:
+def find_near_duplicate(game: Game | None, h: int, window_days: int = 30) -> Article | None:
+    """Per-game window; a general (game-less) source is compared against everything."""
     if h == 0:
         return None
     since = timezone.now() - timedelta(days=window_days)
-    rows = Article.objects.filter(
-        game=game, created_at__gte=since, simhash__isnull=False
-    ).values_list("id", "simhash")[:2000]
+    qs = Article.objects.filter(created_at__gte=since, simhash__isnull=False)
+    if game is not None:
+        qs = qs.filter(game=game)
+    rows = qs.values_list("id", "simhash")[:2000]
     limit = settings.PB["NEAR_DUP_HAMMING"]
     for pk, sh in rows:
         if sh is not None and hamming(h, to_unsigned(sh)) <= limit:
@@ -80,12 +84,25 @@ class IngestStats:
     created: list = field(default_factory=list)  # [(article_id, lead)]
 
 
+def _top_game(hits: dict[str, int]) -> str | None:
+    """The single clearly-best alias match, else None (ambiguous)."""
+    if not hits:
+        return None
+    ranked = sorted(hits.items(), key=lambda kv: -kv[1])
+    if len(ranked) > 1 and ranked[0][1] == ranked[1][1]:
+        return None
+    return ranked[0][0]
+
+
 def ingest_items(source: Source, items: list[RawItem], *, dispatch: bool = True) -> IngestStats:
     stats = IngestStats()
-    game = source.game
+    game = source.game  # None for a GENERAL feed: matched to a game by name below
+    enabled = list(Game.objects.filter(enabled=True)) if game is None else []
     for item in items:
         stats.seen += 1
         if item.kind == "video":
+            if game is None:
+                continue  # videos need a known game
             _, created = content.upsert_video(game, source, item)
             stats.videos += int(created)
             continue
@@ -94,23 +111,26 @@ def ingest_items(source: Source, items: list[RawItem], *, dispatch: bool = True)
         except ValueError:
             stats.invalid += 1
             continue
-        if Article.objects.filter(game=game, canonical_url=canonical).exists():
+        if Article.objects.filter(canonical_url=canonical).exists():
             stats.exact_dup += 1
             continue
+        item_game = game
+        if item_game is None:
+            slug = _top_game(match_games(f"{item.title} {item.lead}", enabled))
+            item_game = next((g for g in enabled if g.slug == slug), None)
         h = simhash64(f"{item.title} {item.lead}")
-        dup = find_near_duplicate(game, h)
+        dup = find_near_duplicate(item_game, h)
         reason = ""
         if dup:
             if registrable_domain(dup.source_url) == registrable_domain(item.url):
                 stats.near_dup_skipped += 1  # repost on the same site
                 continue
-            content.add_evidence(
-                game, SubjectKind.ARTICLE, dup.pk, item.url
-            )  # independent corroboration
-            content.recompute_verification(SubjectKind.ARTICLE, dup.pk)
+            if dup.game is not None:  # independent corroboration
+                content.add_evidence(dup.game, SubjectKind.ARTICLE, dup.pk, item.url)
+                content.recompute_verification(SubjectKind.ARTICLE, dup.pk)
             reason = f"possible duplicate of #{dup.pk} (different outlet)"
         article = Article.objects.create(
-            game=game, source=source, title=item.title[:300], source_url=item.url, canonical_url=canonical,
+            game=item_game, source=source, title=item.title[:300], source_url=item.url, canonical_url=canonical,
             source_name=source.name, source_published_at=item.published_at, simhash=to_signed(h) if h else None,
             status=Article.Status.NEW, review_reason=reason,
         )  # fmt: skip
@@ -154,51 +174,128 @@ def fetch_and_ingest(source_id: int, *, fetcher=None) -> IngestStats | None:
 
 
 # ---------- classify ----------
-def apply_classification(article: Article, cls: Classification) -> None:
-    article.topic = cls.topic
-    article.confidence = cls.confidence
-    article.tags = cls.tags
-    article.our_summary = cls.summary
-    if cls.game_slug and cls.game_slug != article.game.slug:
+@dataclass
+class GameDecision:
+    game: Game | None
+    note: str = ""
+    reject: bool = False
+
+
+def resolve_game(
+    article: Article, cls: Classification, games: dict[str, Game], alias_hits: dict[str, int]
+) -> GameDecision:
+    """Decide which game an article belongs to. Order of trust: agreement between the model and a
+    name match > the source's own game > the model alone > a single name match > unassigned.
+    A null/unsure model answer never overrides what the source already tells us."""
+    src = article.source.game if article.source_id and article.source else None
+    model = games.get(cls.game_slug) if cls.game_slug else None
+    best = _top_game(alias_hits)
+
+    if (
+        cls.relevant is False
+        and cls.confidence >= settings.PB["RELEVANCE_REJECT_THRESHOLD"]
+        and not alias_hits
+    ):
+        return GameDecision(None, "not about a tracked game (auto-rejected)", reject=True)
+
+    if model and (model.slug in alias_hits or src is None or model.pk == (src.pk if src else None)):
+        return GameDecision(model)
+    if src:
+        note = ""
+        if model and model.pk != src.pk:
+            note = f"model suggested {model.name}, kept {src.name} (the source's game)"
+        return GameDecision(src, note)
+    if model:
+        return GameDecision(model)
+    if best and best in games:
+        return GameDecision(games[best])
+    names = ", ".join(sorted(alias_hits)) or "no name match"
+    return GameDecision(None, f"no game matched ({names}): assign one")
+
+
+def apply_classification(
+    article: Article,
+    cls: Classification,
+    games: dict[str, Game] | None = None,
+    alias_hits: dict[str, int] | None = None,
+) -> None:
+    games = games if games is not None else {g.slug: g for g in Game.objects.filter(enabled=True)}
+    article.topic, article.confidence = cls.topic, cls.confidence
+    article.tags, article.our_summary = cls.tags, cls.summary
+    d = resolve_game(article, cls, games, alias_hits or {})
+    if d.reject:
+        article.status = Article.Status.REJECTED
+        article.review_reason = d.note
         article.save()
-        content.queue_for_review(article, f"model assigned a different game ({cls.game_slug})")
         return
-    if cls.game_slug is None:
-        article.save()
-        content.queue_for_review(article, "model could not assign a game")
-        return
+    if d.game is not None and d.game.pk != article.game_id:
+        original_id, target = article.game_id, d.game
+        article.game = target
+        try:
+            with transaction.atomic():
+                article.save()
+        except IntegrityError:  # the same URL is already filed under that game
+            article.game_id = original_id
+            d = GameDecision(
+                games.get(article.game.slug) if article.game_id else None,
+                f"could not move to {target.name} (already filed there)",
+            )
     article.save()
+    if d.game is None:
+        content.queue_for_review(article, d.note)
+        return
     published, why = content.try_auto_publish_fact(article, cls)
     if published and cls.fact:
         content.queue_for_review(
             article, f"fact auto-published ({cls.fact.kind}); approve to also list as news"
         )
     else:
-        content.queue_for_review(article, article.review_reason or why or "needs human review")
+        reason = article.review_reason or d.note or why or "needs human review"
+        content.queue_for_review(article, reason)
 
 
 def classify_article(article_id: int, lead: str, *, client=None) -> str:
     """Returns final state label. Idempotent: only acts on status=new."""
-    article = Article.objects.select_related("game", "source").get(pk=article_id)
+    article = Article.objects.select_related("game", "source", "source__game").get(pk=article_id)
     if article.status != Article.Status.NEW:
         return "skipped"
     if platform.kill_switch_on():
         return "paused"
-    games = dict(Game.objects.filter(enabled=True).values_list("slug", "name"))
+    game_objs = list(Game.objects.filter(enabled=True))
+    games = {g.slug: g for g in game_objs}
+    alias_hits = match_games(f"{article.title} {lead}", game_objs)
     llm = client or SpendGuard(get_llm_client())
     item = ItemForLLM(
         title=article.title, lead=lead, url=article.source_url, source_name=article.source_name
     )
     try:
-        cls = classify(llm, item, games)
+        cls = classify(
+            llm,
+            item,
+            {s: g.name for s, g in games.items()},
+            {s: alias_terms(g) for s, g in games.items()},
+        )
     except LLMUnavailable as e:
+        _attach_by_name(article, games, alias_hits)
         content.queue_for_review(article, f"LLM unavailable: {e}")
         return "queued-unavailable"
     except ClassificationFailed as e:
+        _attach_by_name(article, games, alias_hits)
         content.queue_for_review(article, e.reason)
         return "queued-invalid"
-    apply_classification(article, cls)
+    apply_classification(article, cls, games, alias_hits)
     return "classified"
+
+
+def _attach_by_name(article: Article, games: dict[str, Game], hits: dict[str, int]) -> None:
+    """Without a model answer, a clear name match still attaches an unassigned article."""
+    if article.game_id is None and (slug := _top_game(hits)) and slug in games:
+        article.game = games[slug]
+        try:
+            with transaction.atomic():
+                article.save()
+        except IntegrityError:
+            article.game = None
 
 
 def requeue_stuck(minutes: int = 30) -> int:

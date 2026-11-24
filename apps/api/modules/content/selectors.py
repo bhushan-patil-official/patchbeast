@@ -10,7 +10,7 @@ from modules.common.platforms import PLATFORMS, label
 from modules.games.models import Game
 from modules.games.selectors import current_releases, hub_path, release_history
 
-from .models import Article, Change, Evidence, Patch, Requirement, SubjectKind, Video
+from .models import Article, Change, Evidence, Patch, Requirement, Story, SubjectKind, Video
 
 
 def real_releases(game: Game) -> list:
@@ -115,6 +115,9 @@ def sitemap_entries() -> list[dict]:
         for sub in ("patches", "videos", "requirements"):
             if seo_subpage(g, sub)["indexable"]:
                 out.append({"path": f"/games/{g.slug}/{sub}", "lastmod": last})
+        for st in published_stories(g):
+            if seo_for_story(g, st)["indexable"]:
+                out.append({"path": f"/games/{g.slug}/news/{st.slug}", "lastmod": st.updated_at})
         if published_articles(g).exists():
             newest = published_articles(g).aggregate(m=Max("published_at"))["m"]
             out.append({"path": f"/games/{g.slug}/news", "lastmod": newest})
@@ -144,6 +147,7 @@ def hub_for_game(game: Game) -> dict:
         "videos": list(published_videos(game)[:6]),
         "changes": list(public_changes(game)[:15]),
         "news": list(published_articles(game).order_by("-published_at")[:8]),
+        "stories": list(published_stories(game)[:3]),
     }
 
 
@@ -174,3 +178,26 @@ def seo_for_patch(game: Game, patch: Patch, n_sources: int) -> dict:
 
 def has_public_changes(game: Game) -> bool:
     return public_changes(game).exists()
+
+
+def published_stories(game: Game | None = None) -> QuerySet:
+    qs = Story.objects.filter(status=Story.Status.PUBLISHED, game__enabled=True).select_related(
+        "game"
+    )
+    return (qs.filter(game=game) if game else qs).order_by("-published_at")
+
+
+def seo_for_story(game: Game, story: Story) -> dict:
+    base = seo_for_game(game)
+    if not base["indexable"] and not base["reason"].startswith("placeholder"):
+        return base  # editor disabled indexing
+    ok = (
+        story.status == Story.Status.PUBLISHED
+        and len(story.sources) >= 2
+        and bool(story.blocks)
+        and game.allow_index
+    )
+    return {
+        "indexable": ok,
+        "reason": "" if ok else "story is not published or has fewer than two sources",
+    }

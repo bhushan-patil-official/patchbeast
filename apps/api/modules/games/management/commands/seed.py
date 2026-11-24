@@ -7,7 +7,7 @@ from django.utils import timezone
 
 from modules.common.choices import Verification
 from modules.content import services as content
-from modules.content.models import Article, Change, Patch, Requirement, SubjectKind, Video
+from modules.content.models import Article, Change, Patch, Requirement, Story, SubjectKind, Video
 from modules.games.models import Game, Release
 from modules.platform.models import FeatureFlag, SiteSetting
 from modules.sources.models import Source
@@ -24,6 +24,7 @@ def seed_anchor() -> Game:
             "tagline": "Release status by platform, patches and updates. PC first.",
             "platform": "pc",
             "is_placeholder": True,
+            "aliases": ["GTA 6", "GTA VI", "GTA6", "Grand Theft Auto 6", "Grand Theft Auto VI"],
             "vanity_path": ANCHOR,
             "hub_config": {
                 "platforms": ["pc", "ps5", "xbox_series"],
@@ -149,6 +150,43 @@ def seed_demo() -> Game:
             content.record_change(game, Change.Kind.NEWS, a.title, detail=a.our_summary, source_url=a.source_url,
                                   verification=Verification.REPORTED, subject_kind=SubjectKind.ARTICLE, subject_id=a.pk,
                                   occurred_at=a.published_at)  # fmt: skip
+    Story.objects.get_or_create(
+        game=game, slug="demo-briefing-sample",
+        defaults={
+            "title": "DEMO briefing: what two sample sources say about patch 0.9.1",
+            "dek": "A sample of the briefings Patchbeast drafts from two or more linked reports and a person reviews.",
+            "blocks": [
+                {"text": "DEMO: this is a sample paragraph showing how a briefing reads. It summarises what the first linked source reports about patch 0.9.1 in our own words.", "sources": [0]},
+                {"text": "DEMO: a second paragraph explains where the second linked source agrees or differs, so readers can see how well the claim is supported.", "sources": [1, 0]},
+            ],
+            "key_points": ["DEMO: sample key point one", "DEMO: sample key point two"],
+            "sources": [
+                {"article_id": 0, "url": "https://example.com/demo-news-1", "name": "example.com", "title": "DEMO headline 1"},
+                {"article_id": 0, "url": "https://example.org/demo-news-2", "name": "example.org", "title": "DEMO headline 2"},
+            ],
+            "tags": ["demo"], "cluster_key": "demo-cluster", "status": Story.Status.PUBLISHED,
+            "verification": Verification.CONFIRMED, "model": "demo", "published_at": now - timedelta(days=1),
+        },
+    )  # fmt: skip
+    Story.objects.get_or_create(
+        game=game, slug="demo-weekly-roundup",
+        defaults={
+            "title": "DEMO roundup: everything reported about the demo game this week",
+            "dek": "A sample weekly roundup: several smaller developments in one place, each with its sources.",
+            "kind": Story.Kind.ROUNDUP,
+            "blocks": [
+                {"text": "DEMO: the first paragraph covers one development in our own words and cites the source it relies on.", "sources": [0]},
+                {"text": "DEMO: the second paragraph covers a different, smaller development, so readers get the whole week in one page.", "sources": [1]},
+            ],
+            "key_points": ["DEMO: one development", "DEMO: another development"],
+            "sources": [
+                {"article_id": 0, "url": "https://example.com/demo-news-1", "name": "example.com", "title": "DEMO headline 1"},
+                {"article_id": 0, "url": "https://example.org/demo-news-2", "name": "example.org", "title": "DEMO headline 2"},
+            ],
+            "tags": ["demo"], "cluster_key": "demo-roundup", "status": Story.Status.PUBLISHED,
+            "verification": Verification.CONFIRMED, "model": "demo", "published_at": now - timedelta(hours=6),
+        },
+    )  # fmt: skip
     return game
 
 

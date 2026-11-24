@@ -226,7 +226,7 @@
         },
         "/api/v1/games/{slug}/patches/{platform}/{version}/": {
             "get": {
-                "operationId": "v1_games_patches_retrieve_2",
+                "operationId": "game_patch_detail",
                 "parameters": [
                     {
                         "in": "path",
@@ -298,6 +298,47 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/RequirementsPage"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/games/{slug}/stories/{story}/": {
+            "get": {
+                "operationId": "v1_games_stories_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "story",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "news"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/StoryDetail"
                                 }
                             }
                         },
@@ -586,6 +627,57 @@
                 }
             }
         },
+        "/api/v1/stories/": {
+            "get": {
+                "operationId": "v1_stories_list",
+                "description": "Our written briefings (human-approved), newest first.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "game",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "news"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedStoryCardList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/ticker/": {
             "get": {
                 "operationId": "v1_ticker_list",
@@ -623,10 +715,14 @@
                         "readOnly": true
                     },
                     "game_slug": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
                     },
                     "game_name": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
                     },
                     "title": {
                         "type": "string",
@@ -942,6 +1038,12 @@
                             "$ref": "#/components/schemas/Article"
                         }
                     },
+                    "stories": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StoryCard"
+                        }
+                    },
                     "faq": {
                         "type": "array",
                         "items": {
@@ -984,6 +1086,7 @@
                     "seo",
                     "seo_description",
                     "seo_title",
+                    "stories",
                     "videos"
                 ]
             },
@@ -1056,6 +1159,37 @@
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/Change"
+                        }
+                    }
+                }
+            },
+            "PaginatedStoryCardList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StoryCard"
                         }
                     }
                 }
@@ -1478,6 +1612,169 @@
                 ],
                 "type": "string",
                 "description": "* `new` - New\n* `queued` - Queued for review\n* `published` - Published\n* `rejected` - Rejected"
+            },
+            "StoryBlock": {
+                "type": "object",
+                "properties": {
+                    "text": {
+                        "type": "string"
+                    },
+                    "sources": {
+                        "type": "array",
+                        "items": {
+                            "type": "integer"
+                        }
+                    }
+                },
+                "required": [
+                    "sources",
+                    "text"
+                ]
+            },
+            "StoryCard": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "slug": {
+                        "type": "string",
+                        "readOnly": true,
+                        "pattern": "^[-a-zA-Z0-9_]+$"
+                    },
+                    "kind": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StoryCardKindEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "game_slug": {
+                        "type": "string"
+                    },
+                    "game_name": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "dek": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "verification": {
+                        "$ref": "#/components/schemas/VerificationEnum"
+                    },
+                    "tags": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "source_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "published_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true,
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "dek",
+                    "game_name",
+                    "game_slug",
+                    "id",
+                    "kind",
+                    "published_at",
+                    "slug",
+                    "source_count",
+                    "tags",
+                    "title",
+                    "verification"
+                ]
+            },
+            "StoryCardKindEnum": {
+                "enum": [
+                    "briefing",
+                    "roundup"
+                ],
+                "type": "string",
+                "description": "* `briefing` - Briefing (one development)\n* `roundup` - Roundup (several developments)"
+            },
+            "StoryDetail": {
+                "type": "object",
+                "properties": {
+                    "game": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/GameCard"
+                            }
+                        ],
+                        "readOnly": true
+                    },
+                    "story": {
+                        "$ref": "#/components/schemas/StoryCard"
+                    },
+                    "blocks": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StoryBlock"
+                        }
+                    },
+                    "key_points": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "sources": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/StorySource"
+                        }
+                    },
+                    "seo": {
+                        "$ref": "#/components/schemas/Seo"
+                    }
+                },
+                "required": [
+                    "blocks",
+                    "game",
+                    "key_points",
+                    "seo",
+                    "sources",
+                    "story"
+                ]
+            },
+            "StorySource": {
+                "type": "object",
+                "properties": {
+                    "article_id": {
+                        "type": "integer"
+                    },
+                    "url": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "article_id",
+                    "name",
+                    "title",
+                    "url"
+                ]
             },
             "SubscribeRequest": {
                 "type": "object",

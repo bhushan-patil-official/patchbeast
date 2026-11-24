@@ -27,6 +27,7 @@ class Env(BaseSettings):
     llm_price_out_per_mtok: float = 0.50
     llm_daily_cap_usd: float = 1.00
     auto_publish_threshold: float = 0.85
+    relevance_reject_threshold: float = 0.85
 
     youtube_api_key: str = ""
     youtube_daily_quota: int = 10000
@@ -55,6 +56,10 @@ class Env(BaseSettings):
     feature_ads: bool = False
     feature_affiliate: bool = False
     feature_newsletter: bool = True
+    feature_stories: bool = True
+    story_max_per_day: int = 5
+    story_similarity: float = 0.30
+    story_window_days: int = 7
     feature_tier2_cheats: bool = False
     feature_tier2_maps: bool = False
     feature_tier3_alerts: bool = False

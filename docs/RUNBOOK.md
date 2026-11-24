@@ -60,6 +60,26 @@ $C exec api python manage.py load_pack gta6             # loads it (idempotent)
 
 **Verify first.** The pack was compiled from search-result snippets; open each source and check dates, versions, sizes and wording (and the publisher's own support page for official notes) before loading. Afterwards edit or delete anything wrong in Admin → Patches / Releases / Articles. A page becomes indexable automatically once it has real, sourced content. To add your own pack, copy `gta6.json` and follow its structure.
 
+### Game assignment, general feeds and curating a high volume
+
+* **Aliases**: Admin -> Games -> *Aliases* (JSON list), e.g. `["GTA 6", "GTA VI", "Grand Theft Auto 6"]`. Add every spelling headlines use; they drive name matching and are sent to the model. (The `seed` command sets them for the anchor game.)
+* **Game-specific feed**: set the Source's *game*. The source's game is trusted unless the model AND a name match point elsewhere.
+* **General feed** (covers several games): leave the Source's *game* **empty**. Items are attached by name; unmatched/ambiguous ones show in the review queue under **Unassigned** with a game picker.
+* **Review queue** (`/admin/review/`): filter chips per game (with counts) and *Unassigned*; pick/change the game on a card and approve in one click; tick cards (or `x`) and use **Merge into one briefing** (same game, 2+ outlets), **Approve as linked news**, or **Reject**.
+* **Noise**: items the model is sure are not about a tracked game are rejected automatically (`RELEVANCE_REJECT_THRESHOLD`); they are kept in Admin -> Articles (filter *status = rejected*) if you need to check.
+* **Roundups**: leftovers become one weekly roundup draft per game; clear it in the same queue under *Story drafts*.
+* **Fix an existing backlog** (items stuck with "model could not assign a game"): `docker compose -f docker-compose.yml -f docker-compose.prod.yml exec api python manage.py reassign_games --dry-run`, then without `--dry-run`.
+* **Posts page**: `/news` lists briefings/roundups then linked news, with a game filter.
+
+### Automated briefings (story drafts)
+
+Every 6 hours the system groups similar articles about the same development (needs two independent outlets) and drafts a short, cited briefing for your review. Nothing is published until you approve it.
+
+* Turn off: Admin → Feature flags → `stories` (or `FEATURE_STORIES=false`). The kill switch and the daily LLM cap also stop it.
+* Tune: `STORY_MAX_PER_DAY` (default 5), `STORY_SIMILARITY` (higher = stricter grouping), `STORY_WINDOW_DAYS`.
+* Needs `ANTHROPIC_API_KEY` and articles that already have our summary (i.e. classified or edited items in the queue/published).
+* Rejecting a draft frees its articles; the same group is not drafted again.
+
 ### Game sections
 
 Each game has its own pages: Overview, Patches & updates (a page per update), News, Videos, PC requirements, Timeline. Patch highlights/size are edited in Admin → Patches. A patch page stays `noindex` until it has at least one source and a summary or highlights.
@@ -124,7 +144,7 @@ Migrations are additive; if a bad migration ran, restore the nightly backup (§4
 
 ## 6. Weekly checklist (2-4 h)
 
-1. **Review queue (30-90 min)**: `/admin/review/`. Keys: `j/k` move, `e` edit, `a` approve, `r` reject, `s` save. Write/keep *our* summary only. Check the "why queued" reason. Reject duplicates and rumours you can't source.
+1. **Review queue (30-90 min)**: `/admin/review/` (articles, **story drafts**, videos). For each story draft open the numbered sources and check every claim against them; edit paragraphs freely (citations stay attached); reject anything you can't verify. Keys: `j/k` move, `e` edit, `a` approve, `r` reject, `s` save. Write/keep *our* summary only. Check the "why queued" reason. Reject duplicates and rumours you can't source.
 2. **Fetcher health (10 min)**: Admin → Sources, sort by health. Fix/replace failing feeds. Admin → Fetch logs for anomalies.
 3. **Spend (5 min)**: Admin → Site settings and LLM usage. Raise/lower `daily_llm_cap` if needed.
 4. **Alerts (5 min)**: skim Alert events; clear root causes.
@@ -151,6 +171,7 @@ Keep api/worker/beat/postgres/redis on the VPS; deploy only the Next.js app to V
 |---|---|
 | Items stuck in "new" | worker unhealthy or kill switch on; `ingest.requeue_stuck` moves them to review after 30 min |
 | Everything lands in review with "LLM unavailable" | `ANTHROPIC_API_KEY` missing, spend cap reached, or kill switch on |
+| Approved/published but not on the site | publishing in Admin now refreshes the site automatically; if it still looks stale: Admin -> Alert events (`revalidate_failed`), the worker `publish` queue, `REVALIDATE_URL`/`REVALIDATE_SECRET` mismatch; then run `... exec api python manage.py revalidate_all` or Admin -> Site settings -> *Refresh all public pages now* |
 | Publish doesn't show on site | worker `publish` queue; `REVALIDATE_URL`/`REVALIDATE_SECRET` mismatch (alert fires after retries); pages self-heal within 5 min anyway |
 | 502 from Caddy | `docker compose ps`; api healthcheck; `logs api` (JSON logs carry `request_id`) |
 | Source "failing" | Admin → Sources → *last error*; 404/410 auto-disables after two tries |

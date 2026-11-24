@@ -1,3 +1,4 @@
+from django.db.models import F
 from drf_spectacular.utils import OpenApiParameter, extend_schema
 from rest_framework import generics
 from rest_framework.decorators import api_view
@@ -111,7 +112,9 @@ class NewsList(generics.ListAPIView):
     serializer_class = s.ArticleSerializer
 
     def get_queryset(self):
-        qs = selectors.published_articles().order_by("-published_at")
+        qs = selectors.published_articles().order_by(
+            F("published_at").desc(nulls_last=True), "-created_at"
+        )
         game = self.request.query_params.get("game")
         return qs.filter(game__slug=game) if game else qs
 
@@ -132,7 +135,7 @@ def sitemap(request):
     return Response(s.SitemapEntrySerializer(selectors.sitemap_entries(), many=True).data)
 
 
-@extend_schema(responses=s.PatchDetailSerializer, tags=["games"])
+@extend_schema(operation_id="game_patch_detail", responses=s.PatchDetailSerializer, tags=["games"])
 @api_view(["GET"])
 def patch_detail(request, slug: str, platform: str, version: str):
     g = _game_or_404(slug)
@@ -158,3 +161,29 @@ class GameChangesList(generics.ListAPIView):
 
     def get_queryset(self):
         return selectors.public_changes(_game_or_404(self.kwargs["slug"]))
+
+
+@extend_schema(parameters=[OpenApiParameter("game", str, required=False)], tags=["news"])
+class StoriesList(generics.ListAPIView):
+    """Our written briefings (human-approved), newest first."""
+
+    serializer_class = s.StoryCardSerializer
+
+    def get_queryset(self):
+        qs = selectors.published_stories()
+        game = self.request.query_params.get("game")
+        return qs.filter(game__slug=game) if game else qs
+
+
+@extend_schema(responses=s.StoryDetailSerializer, tags=["news"])
+@api_view(["GET"])
+def story_detail(request, slug: str, story: str):
+    g = _game_or_404(slug)
+    st = selectors.published_stories(g).filter(slug=story).first()
+    if st is None:
+        raise NotFound("story not found")
+    data = {
+        "game": g, "story": st, "blocks": st.blocks, "key_points": st.key_points,
+        "sources": st.sources, "seo": selectors.seo_for_story(g, st),
+    }  # fmt: skip
+    return Response(s.StoryDetailSerializer(data).data)

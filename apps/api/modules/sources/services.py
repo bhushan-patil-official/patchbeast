@@ -3,6 +3,7 @@
 from datetime import timedelta
 
 from django.conf import settings
+from django.db.models import Q
 from django.utils import timezone
 
 from modules.platform.services import raise_alert
@@ -20,9 +21,11 @@ def to_spec(source: Source) -> SourceSpec:
 
 def due_sources(now=None):
     now = now or timezone.now()
-    return Source.objects.filter(
-        enabled=True, is_placeholder=False, next_fetch_at__lte=now, game__enabled=True
-    ).exclude(type=Source.Type.WEBSUB)
+    return (
+        Source.objects.filter(enabled=True, is_placeholder=False, next_fetch_at__lte=now)
+        .filter(Q(game__isnull=True) | Q(game__enabled=True))
+        .exclude(type=Source.Type.WEBSUB)
+    )
 
 
 def mark_success(source: Source, result: FetchResult) -> None:

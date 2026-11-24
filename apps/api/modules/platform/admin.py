@@ -1,12 +1,21 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 
 from modules.common.admin import AuditAdmin
 
 from .models import AlertEvent, FeatureFlag, LLMUsage, SiteSetting
 
 
+@admin.action(description="Refresh all public pages now")
+def refresh_site(modeladmin, request, queryset):
+    from modules.content.services import revalidate_everything
+
+    n = revalidate_everything()
+    messages.success(request, f"Scheduled {n} refresh request(s). Pages update within seconds.")
+
+
 @admin.register(SiteSetting)
 class SiteSettingAdmin(AuditAdmin):
+    actions = [refresh_site]
     list_display = (
         "__str__",
         "kill_switch",

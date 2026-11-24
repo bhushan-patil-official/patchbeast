@@ -1,10 +1,10 @@
-from django.contrib import admin
+from django.contrib import admin, messages
 from django.utils.html import format_html
 
 from modules.common.admin import AuditAdmin
 
 from . import services
-from .models import Article, Change, Evidence, Patch, Requirement, Video
+from .models import Article, Change, Evidence, Patch, Requirement, Story, Video
 
 
 @admin.register(Article)
@@ -21,6 +21,53 @@ class ArticleAdmin(AuditAdmin):
     list_filter = ("status", "game", "verification")
     search_fields = ("title", "source_url")
     readonly_fields = ("simhash", "canonical_url")
+    actions = ["publish_selected", "reject_selected"]
+
+    def save_model(self, request, obj, form, change):
+        """Publishing/rejecting from this form runs the SAME logic as the review queue
+        (sources, verification, published date, timeline entry, site refresh)."""
+        old = form.initial.get("status") if change else None
+        new = obj.status
+        if change and "status" in form.changed_data:
+            if new == Article.Status.PUBLISHED and old != Article.Status.PUBLISHED:
+                obj.status = old
+                super().save_model(request, obj, form, change)
+                try:
+                    services.approve_article(obj, request.user)
+                    messages.success(request, "Published. The website refreshes within seconds.")
+                except ValueError as e:
+                    messages.error(request, f"Not published: {e}. It stays '{old}'.")
+                return
+            if new == Article.Status.REJECTED and old == Article.Status.PUBLISHED:
+                obj.status = old
+                super().save_model(request, obj, form, change)
+                services.reject_article(obj, request.user, obj.review_reason)
+                messages.info(request, "Rejected and removed from the site.")
+                return
+            if old == Article.Status.PUBLISHED:  # un-publish back to queued/new
+                Change.objects.filter(subject_kind="article", subject_id=obj.pk).update(
+                    is_public=False
+                )
+        super().save_model(request, obj, form, change)
+
+    @admin.action(description="Publish selected (needs a game and our summary)")
+    def publish_selected(self, request, queryset):
+        ok = 0
+        for a in queryset.exclude(status=Article.Status.PUBLISHED):
+            try:
+                services.approve_article(a, request.user)
+                ok += 1
+            except ValueError as e:
+                messages.warning(request, f"#{a.pk} not published: {e}")
+        messages.success(request, f"Published {ok} article(s).")
+
+    @admin.action(description="Reject selected")
+    def reject_selected(self, request, queryset):
+        n = 0
+        for a in queryset.exclude(status=Article.Status.REJECTED):
+            services.reject_article(a, request.user, "rejected in admin")
+            n += 1
+        messages.info(request, f"Rejected {n} article(s).")
 
 
 @admin.register(Patch)
@@ -88,3 +135,11 @@ class EvidenceAdmin(AuditAdmin):
 class ChangeAdmin(AuditAdmin):
     list_display = ("occurred_at", "game", "kind", "title", "verification", "is_public")
     list_filter = ("kind", "game", "is_public")
+
+
+@admin.register(Story)
+class StoryAdmin(AuditAdmin):
+    list_display = ("title", "game", "status", "verification", "published_at", "created_at")
+    list_filter = ("status", "game")
+    search_fields = ("title",)
+    readonly_fields = ("cluster_key", "model", "sources", "verification")

@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
+from django.utils import timezone
 
 from modules.common.choices import Verification
 from modules.common.models import AuditModel
@@ -25,7 +27,10 @@ class Article(AuditModel):
         PUBLISHED = "published", "Published"
         REJECTED = "rejected", "Rejected"
 
-    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="articles")
+    game = models.ForeignKey(
+        Game, null=True, blank=True, on_delete=models.CASCADE, related_name="articles",
+        help_text="Empty = not matched to a game yet (assign one in the review queue).",
+    )  # fmt: skip
     source = models.ForeignKey(
         Source, null=True, blank=True, on_delete=models.SET_NULL, related_name="articles"
     )
@@ -54,10 +59,20 @@ class Article(AuditModel):
         settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
     )
 
+    def save(self, *args, **kwargs):
+        if self.status == self.Status.PUBLISHED and self.published_at is None:
+            self.published_at = timezone.now()  # never leave a public item without a date
+        super().save(*args, **kwargs)
+
     class Meta:
         ordering = ["-created_at"]
         constraints = [
-            models.UniqueConstraint(fields=["game", "canonical_url"], name="uniq_article_game_url")
+            models.UniqueConstraint(fields=["game", "canonical_url"], name="uniq_article_game_url"),
+            models.UniqueConstraint(
+                fields=["canonical_url"],
+                condition=Q(game__isnull=True),
+                name="uniq_article_url_unassigned",
+            ),
         ]
         indexes = [models.Index(fields=["status", "-published_at"])]
 
@@ -213,3 +228,57 @@ class Change(AuditModel):
 
     class Meta:
         ordering = ["-occurred_at"]
+
+
+class Story(AuditModel):
+    """OUR written briefing synthesised from 2+ independent linked sources.
+
+    Drafted automatically from our own summaries and verified facts (never from source page text),
+    reviewed by a person before publishing. Every paragraph cites its sources."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft (awaiting review)"
+        PUBLISHED = "published", "Published"
+        REJECTED = "rejected", "Rejected"
+
+    class Kind(models.TextChoices):
+        BRIEFING = "briefing", "Briefing (one development)"
+        ROUNDUP = "roundup", "Roundup (several developments)"
+
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="stories")
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.BRIEFING)
+    slug = models.SlugField(max_length=120)
+    title = models.CharField(max_length=200)
+    dek = models.CharField(max_length=300, blank=True)
+    blocks = models.JSONField(default=list, help_text='[{"text": "...", "sources": [0, 1]}]')
+    key_points = models.JSONField(default=list, blank=True)
+    sources = models.JSONField(
+        default=list, help_text='[{"article_id": 1, "url": "...", "name": "...", "title": "..."}]'
+    )
+    tags = models.JSONField(default=list, blank=True)
+    articles = models.ManyToManyField(Article, related_name="stories", blank=True)
+    cluster_key = models.CharField(max_length=40, db_index=True)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.DRAFT, db_index=True
+    )
+    verification = models.CharField(
+        max_length=10, choices=Verification.choices, default=Verification.REPORTED
+    )
+    model = models.CharField(max_length=80, blank=True)
+    review_reason = models.CharField(max_length=300, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["-published_at", "-created_at"]
+        verbose_name_plural = "stories"
+        constraints = [
+            models.UniqueConstraint(fields=["game", "slug"], name="uniq_story_slug"),
+            models.UniqueConstraint(fields=["game", "cluster_key"], name="uniq_story_cluster"),
+        ]
+
+    def __str__(self) -> str:
+        return self.title[:80]

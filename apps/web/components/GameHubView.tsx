@@ -7,6 +7,7 @@ import { JsonLd } from "@/components/JsonLd";
 import { KnownUnknown } from "@/components/KnownUnknown";
 import { HardwareBlock, HubAd } from "@/components/Monetization";
 import { NewsletterBlock } from "@/components/NewsletterBlock";
+import { StoryCard } from "@/components/StoryCard";
 import { PlatformReleases } from "@/components/PlatformReleases";
 import { VideoEmbed } from "@/components/VideoEmbed";
 import type { Schemas } from "@/lib/api";
@@ -130,6 +131,7 @@ export function GameHubView({ h }: { h: Schemas["Hub"] }) {
 
       {show("news") && (
         <Section eyebrow="Curated" title="News" id="news" actions={<Link href="/news" className="text-sm text-accent-text underline">All news →</Link>}>
+          {h.stories.length > 0 && <div className="mb-4 space-y-3">{h.stories.map((st) => <StoryCard key={st.id} s={st} />)}</div>}
           {h.news.length ? <div className="grid gap-4 md:grid-cols-2">{h.news.map((a) => <NewsCard key={a.id} a={a} />)}</div> : <p className="text-sm text-fg-muted">No curated news yet. Items appear here once a person has reviewed them.</p>}
         </Section>
       )}

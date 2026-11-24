@@ -106,14 +106,22 @@ class VideoSerializer(serializers.ModelSerializer):
 
 class ArticleSerializer(serializers.ModelSerializer):
     tags = serializers.ListField(child=serializers.CharField())
-    game_slug = serializers.CharField(source="game.slug")
-    game_name = serializers.CharField(source="game.name")
+    game_slug = serializers.SerializerMethodField()
+    game_name = serializers.SerializerMethodField()
     verification = serializers.ChoiceField(choices=Verification.choices)
 
     class Meta:
         model = Article
         fields = ["id", "game_slug", "game_name", "title", "source_url", "source_name", "our_summary", "tags", "topic", "verification",
                   "status", "published_at", "created_at"]  # fmt: skip
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_game_slug(self, a: Article) -> str | None:
+        return a.game.slug if a.game else None
+
+    @extend_schema_field(serializers.CharField(allow_null=True))
+    def get_game_name(self, a: Article) -> str | None:
+        return a.game.name if a.game else None
 
 
 class StoryBlockSerializer(serializers.Serializer):
@@ -140,6 +148,7 @@ class StoryCardSerializer(serializers.ModelSerializer):
         fields = [
             "id",
             "slug",
+            "kind",
             "game_slug",
             "game_name",
             "title",

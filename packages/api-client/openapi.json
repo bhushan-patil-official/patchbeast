@@ -715,10 +715,14 @@
                         "readOnly": true
                     },
                     "game_slug": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
                     },
                     "game_name": {
-                        "type": "string"
+                        "type": "string",
+                        "nullable": true,
+                        "readOnly": true
                     },
                     "title": {
                         "type": "string",
@@ -1639,6 +1643,14 @@
                         "readOnly": true,
                         "pattern": "^[-a-zA-Z0-9_]+$"
                     },
+                    "kind": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/StoryCardKindEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    },
                     "game_slug": {
                         "type": "string"
                     },
@@ -1678,6 +1690,7 @@
                     "game_name",
                     "game_slug",
                     "id",
+                    "kind",
                     "published_at",
                     "slug",
                     "source_count",
@@ -1685,6 +1698,14 @@
                     "title",
                     "verification"
                 ]
+            },
+            "StoryCardKindEnum": {
+                "enum": [
+                    "briefing",
+                    "roundup"
+                ],
+                "type": "string",
+                "description": "* `briefing` - Briefing (one development)\n* `roundup` - Roundup (several developments)"
             },
             "StoryDetail": {
                 "type": "object",

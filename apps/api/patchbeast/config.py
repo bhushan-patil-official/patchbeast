@@ -27,6 +27,7 @@ class Env(BaseSettings):
     llm_price_out_per_mtok: float = 0.50
     llm_daily_cap_usd: float = 1.00
     auto_publish_threshold: float = 0.85
+    relevance_reject_threshold: float = 0.85
 
     youtube_api_key: str = ""
     youtube_daily_quota: int = 10000

@@ -38,7 +38,7 @@ class Block(BaseModel):
 class StoryDraft(BaseModel):
     title: str = Field(min_length=20, max_length=110)
     dek: str = Field(min_length=40, max_length=260)
-    blocks: list[Block] = Field(min_length=2, max_length=5)
+    blocks: list[Block] = Field(min_length=2, max_length=6)
     key_points: list[str] = Field(min_length=2, max_length=5)
     tags: list[str] = Field(default_factory=list, max_length=6)
 
@@ -63,19 +63,35 @@ Reply with ONE JSON object and nothing else:
  "key_points": ["2-5 short factual bullets"], "tags": ["up to 6 short lowercase tags"]}"""
 
 
-def build_prompt(game_name: str, items: list[StoryInput], facts: list[str]) -> tuple[str, str]:
+SYSTEM_ROUNDUP = SYSTEM.replace(
+    "Write ONE short original briefing from the numbered items below.",
+    "Write ONE short original ROUNDUP of what has been reported about this game recently, from the numbered items below. "
+    "The items may cover several different developments: give each development its own paragraph and say plainly which are minor.",
+).replace(
+    "100-250 words in 2-4 paragraphs.",
+    "150-380 words in 3-6 paragraphs, one development per paragraph.",
+)
+
+
+def build_prompt(
+    game_name: str, items: list[StoryInput], facts: list[str], mode: str = "briefing"
+) -> tuple[str, str]:
     lines = "\n".join(
         f"[{i.idx}] ({i.source_name}, {i.date}) {i.title}: {i.summary}" for i in items
     )
     fact_lines = "\n".join(f"- {f}" for f in facts) or "- (none)"
-    return SYSTEM, f"Game: {game_name}\n<items>\n{lines}\n</items>\n<facts>\n{fact_lines}\n</facts>"
+    return (
+        SYSTEM_ROUNDUP if mode == "roundup" else SYSTEM
+    ), f"Game: {game_name}\n<items>\n{lines}\n</items>\n<facts>\n{fact_lines}\n</facts>"
 
 
 def _numbers(text: str) -> set[str]:
     return {n.strip(".,:/-") for n in _NUM.findall(text)}
 
 
-def validate_draft(draft: StoryDraft, items: list[StoryInput], facts: list[str]) -> None:
+def validate_draft(
+    draft: StoryDraft, items: list[StoryInput], facts: list[str], mode: str = "briefing"
+) -> None:
     valid = {i.idx for i in items}
     cited: set[int] = set()
     for b in draft.blocks:
@@ -85,8 +101,9 @@ def validate_draft(draft: StoryDraft, items: list[StoryInput], facts: list[str])
     if len(cited) < 2:
         raise ValueError("must cite at least two different items")
     words = sum(len(b.text.split()) for b in draft.blocks)
-    if not 80 <= words <= 380:
-        raise ValueError(f"length {words} words is outside 80-380")
+    lo, hi = (120, 520) if mode == "roundup" else (80, 380)
+    if not lo <= words <= hi:
+        raise ValueError(f"length {words} words is outside {lo}-{hi}")
     body = " ".join(
         [draft.title, draft.dek, *[b.text for b in draft.blocks], *draft.key_points]
     ).lower()
@@ -101,10 +118,14 @@ def validate_draft(draft: StoryDraft, items: list[StoryInput], facts: list[str])
 
 
 def write_story(
-    client: LLMClient, game_name: str, items: list[StoryInput], facts: list[str]
+    client: LLMClient,
+    game_name: str,
+    items: list[StoryInput],
+    facts: list[str],
+    mode: str = "briefing",
 ) -> StoryDraft:
     """Validate; on failure retry ONCE with the error fed back; then raise StoryFailed."""
-    system, user = build_prompt(game_name, items, facts)
+    system, user = build_prompt(game_name, items, facts, mode)
     error = ""
     for _ in range(2):
         prompt = (
@@ -112,11 +133,11 @@ def write_story(
             if not error
             else f"{user}\n\nYour previous reply was rejected: {error}. Reply again with valid JSON only."
         )
-        text = client.complete(system, prompt, max_tokens=1400).text.strip()
+        text = client.complete(system, prompt, max_tokens=1800).text.strip()
         text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text)
         try:
             draft = StoryDraft.model_validate(json.loads(text))
-            validate_draft(draft, items, facts)
+            validate_draft(draft, items, facts, mode)
             draft.tags = [t.strip().lower()[:30] for t in draft.tags if t.strip()][:6]
             return draft
         except (json.JSONDecodeError, ValidationError, ValueError) as e:

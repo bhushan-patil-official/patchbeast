@@ -202,6 +202,8 @@ def try_auto_publish_fact(article: Article, cls) -> tuple[bool, str]:
     if not article.source_url:
         return False, "no source url"
     game = article.game
+    if game is None:
+        return False, "article is not attached to a game yet"
     if fact.platform not in game.platforms:
         return False, f"platform {fact.platform} is not tracked for this game"
     if fact.kind == "requirement" and fact.platform != "pc":
@@ -252,18 +254,19 @@ def approve_article(
         article.tags = [t.strip().lower() for t in tags if t.strip()][:6]
     if not article.our_summary.strip():
         raise ValueError("an approved item needs our summary")
-    add_evidence(article.game, SubjectKind.ARTICLE, article.pk, article.source_url)
+    game = article.game
+    if game is None:
+        raise ValueError("assign a game before approving")
+    add_evidence(game, SubjectKind.ARTICLE, article.pk, article.source_url)
     recompute_verification(SubjectKind.ARTICLE, article.pk)
     article.refresh_from_db(fields=["verification"])
     article.status = Article.Status.PUBLISHED
     article.published_at = timezone.now()
     article.reviewed_at, article.reviewed_by, article.updated_by = timezone.now(), user, user
     article.save()
-    record_change(article.game, Change.Kind.NEWS, article.title, detail=article.our_summary[:300], source_url=article.source_url,
+    record_change(game, Change.Kind.NEWS, article.title, detail=article.our_summary[:300], source_url=article.source_url,
                   verification=article.verification, subject_kind=SubjectKind.ARTICLE, subject_id=article.pk)  # fmt: skip
-    request_revalidation(
-        [*game_tags(article.game), "news"], ["/news", f"/games/{article.game.slug}", "/"]
-    )
+    request_revalidation([*game_tags(game), "news"], ["/news", f"/games/{game.slug}", "/"])
     return article
 
 
@@ -274,11 +277,28 @@ def reject_article(article: Article, user, reason: str = "") -> Article:
     article.review_reason = reason[:300] or article.review_reason
     article.reviewed_at, article.reviewed_by, article.updated_by = timezone.now(), user, user
     article.save()
-    if was_published:
+    if was_published and article.game is not None:
         Change.objects.filter(subject_kind=SubjectKind.ARTICLE, subject_id=article.pk).update(
             is_public=False
         )
         request_revalidation([*game_tags(article.game), "news"], ["/news"])
+    return article
+
+
+def assign_game(article: Article, game: Game | None, user=None) -> Article:
+    """Attach (or detach) an article to a game. Refuses if the same URL is already filed there."""
+    if game is not None and article.game_id != game.pk:
+        clash = Article.objects.filter(game=game, canonical_url=article.canonical_url).exclude(
+            pk=article.pk
+        )
+        if clash.exists():
+            other = clash.first()
+            raise ValueError(
+                f"{game.name} already has this URL (article #{other.pk if other else '?'})"
+            )
+    article.game = game
+    article.updated_by = user
+    article.save(update_fields=["game", "updated_by", "updated_at"])
     return article
 
 

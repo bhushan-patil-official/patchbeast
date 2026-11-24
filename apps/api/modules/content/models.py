@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Q
 
 from modules.common.choices import Verification
 from modules.common.models import AuditModel
@@ -25,7 +26,10 @@ class Article(AuditModel):
         PUBLISHED = "published", "Published"
         REJECTED = "rejected", "Rejected"
 
-    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="articles")
+    game = models.ForeignKey(
+        Game, null=True, blank=True, on_delete=models.CASCADE, related_name="articles",
+        help_text="Empty = not matched to a game yet (assign one in the review queue).",
+    )  # fmt: skip
     source = models.ForeignKey(
         Source, null=True, blank=True, on_delete=models.SET_NULL, related_name="articles"
     )
@@ -57,7 +61,12 @@ class Article(AuditModel):
     class Meta:
         ordering = ["-created_at"]
         constraints = [
-            models.UniqueConstraint(fields=["game", "canonical_url"], name="uniq_article_game_url")
+            models.UniqueConstraint(fields=["game", "canonical_url"], name="uniq_article_game_url"),
+            models.UniqueConstraint(
+                fields=["canonical_url"],
+                condition=Q(game__isnull=True),
+                name="uniq_article_url_unassigned",
+            ),
         ]
         indexes = [models.Index(fields=["status", "-published_at"])]
 
@@ -226,7 +235,12 @@ class Story(AuditModel):
         PUBLISHED = "published", "Published"
         REJECTED = "rejected", "Rejected"
 
+    class Kind(models.TextChoices):
+        BRIEFING = "briefing", "Briefing (one development)"
+        ROUNDUP = "roundup", "Roundup (several developments)"
+
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="stories")
+    kind = models.CharField(max_length=10, choices=Kind.choices, default=Kind.BRIEFING)
     slug = models.SlugField(max_length=120)
     title = models.CharField(max_length=200)
     dek = models.CharField(max_length=300, blank=True)

@@ -288,8 +288,8 @@ export interface components {
     schemas: {
         Article: {
             readonly id: number;
-            game_slug: string;
-            game_name: string;
+            readonly game_slug: string | null;
+            readonly game_name: string | null;
             title: string;
             /** Format: uri */
             source_url: string;
@@ -541,6 +541,7 @@ export interface components {
         StoryCard: {
             readonly id: number;
             readonly slug: string;
+            readonly kind: components["schemas"]["StoryCardKindEnum"];
             game_slug: string;
             game_name: string;
             readonly title: string;
@@ -551,6 +552,12 @@ export interface components {
             /** Format: date-time */
             readonly published_at: string | null;
         };
+        /**
+         * @description * `briefing` - Briefing (one development)
+         *     * `roundup` - Roundup (several developments)
+         * @enum {string}
+         */
+        StoryCardKindEnum: "briefing" | "roundup";
         StoryDetail: {
             readonly game: components["schemas"]["GameCard"];
             story: components["schemas"]["StoryCard"];

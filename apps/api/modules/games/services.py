@@ -1,5 +1,7 @@
 """Game/Release writes. Business rules for the release timeline live here."""
 
+import re
+from collections.abc import Iterable
 from datetime import date
 
 from django.db import transaction
@@ -35,3 +37,37 @@ def set_current_release(
         created_by=user, updated_by=user,
     )  # fmt: skip
     return new, prev
+
+
+def alias_terms(game: Game) -> list[str]:
+    """Names a headline may use for this game. The short name only counts when it is distinctive."""
+    raw = [game.name, *(game.aliases or [])]
+    if len(game.short_name or "") >= 5:
+        raw.append(game.short_name)
+    terms = []
+    for t in raw:
+        t = re.sub(r"\(.*?\)", "", str(t)).strip().lower()
+        if len(t) >= 3 and t not in terms:
+            terms.append(t)
+    return terms
+
+
+def match_games(text: str, games: Iterable[Game]) -> dict[str, int]:
+    """Count distinct whole-word mentions per game slug (overlapping aliases of one mention count once)."""
+    hay = (text or "").lower()
+    hits: dict[str, int] = {}
+    for g in games:
+        spans: list[tuple[int, int]] = []
+        for t in alias_terms(g):
+            spans += [
+                m.span() for m in re.finditer(rf"(?<![a-z0-9]){re.escape(t)}(?![a-z0-9])", hay)
+            ]
+        merged: list[list[int]] = []
+        for start, end in sorted(spans):
+            if merged and start < merged[-1][1]:
+                merged[-1][1] = max(merged[-1][1], end)
+            else:
+                merged.append([start, end])
+        if merged:
+            hits[g.slug] = len(merged)
+    return hits

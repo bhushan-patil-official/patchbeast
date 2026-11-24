@@ -28,6 +28,10 @@ class Game(AuditModel):
         help_text='e.g. {"faq": [{"q": "...", "a": "..."}], "sections": ["release","requirements","patches","videos","news"], '
         '"checker": true, "affiliate_categories": ["gpu","ssd"]}',
     )
+    aliases = models.JSONField(
+        default=list, blank=True,
+        help_text='Other names used in headlines, e.g. ["GTA 6", "GTA VI", "Grand Theft Auto 6"]. Used to attach articles to this game.',
+    )  # fmt: skip
     vanity_path = models.SlugField(
         max_length=60, unique=True, null=True, blank=True,
         help_text="Optional short URL for a flagship page, e.g. 'gta-6-pc' -> /gta-6-pc (the /games/<slug> URL then redirects).",

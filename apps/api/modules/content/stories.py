@@ -86,10 +86,19 @@ def _unique_slug(game: Game, title: str) -> str:
     return slug
 
 
-def create_draft(game: Game, members: list[Article], client) -> Story | None:
+def create_draft(
+    game: Game,
+    members: list[Article],
+    client,
+    *,
+    kind: str = Story.Kind.BRIEFING,
+    raise_on_fail: bool = False,
+) -> Story | None:
     members = sorted(members, key=lambda a: (a.source_published_at or a.created_at))
     key = cluster_key([a.pk for a in members])
     if Story.objects.filter(game=game, cluster_key=key).exists():
+        if raise_on_fail:
+            raise ValueError("a story for exactly these articles already exists")
         return None
     items = [
         StoryInput(i, a.title, a.our_summary, a.source_name or registrable_domain(a.source_url), (a.source_published_at or a.created_at).date().isoformat())
@@ -97,19 +106,23 @@ def create_draft(game: Game, members: list[Article], client) -> Story | None:
     ]  # fmt: skip
     facts = _facts(game, settings.PB["STORY_WINDOW_DAYS"])
     try:
-        draft = write_story(client, game.name, items, facts)
+        draft = write_story(
+            client, game.name, items, facts, "roundup" if kind == Story.Kind.ROUNDUP else "briefing"
+        )
     except StoryFailed as e:
         log.warning("story draft failed for %s: %s", key, e.reason)
+        if raise_on_fail:
+            raise ValueError(e.reason) from e
         return None
     domains = {registrable_domain(a.source_url) for a in members}
     try:
         with transaction.atomic():
             story = Story.objects.create(
-                game=game, slug=_unique_slug(game, draft.title), title=draft.title, dek=draft.dek,
+                game=game, kind=kind, slug=_unique_slug(game, draft.title), title=draft.title, dek=draft.dek,
                 blocks=[b.model_dump() for b in draft.blocks], key_points=draft.key_points, tags=draft.tags,
                 sources=[{"article_id": a.pk, "url": a.source_url, "name": items[i].source_name, "title": a.title} for i, a in enumerate(members)],
                 cluster_key=key, verification=compute_verification(domains), model=getattr(client, "model", ""),
-                review_reason=f"drafted from {len(members)} sources; check facts against the links",
+                review_reason=f"{kind} drafted from {len(members)} sources; check facts against the links",
             )  # fmt: skip
             story.articles.set(members)
     except IntegrityError:
@@ -117,12 +130,75 @@ def create_draft(game: Game, members: list[Article], client) -> Story | None:
     return story
 
 
-def build_for_game(game: Game, client=None, *, max_new: int | None = None) -> list[Story]:
-    if not platform.flag_enabled("stories") or platform.kill_switch_on():
-        return []
-    cap_day = settings.PB["STORY_MAX_PER_DAY"]
+def _can_draft() -> bool:
+    return platform.flag_enabled("stories") and not platform.kill_switch_on()
+
+
+def _remaining_budget(max_new: int | None = None) -> int:
     today = Story.objects.filter(created_at__date=timezone.now().date()).count()
-    budget = min(max_new or settings.PB["STORY_MAX_PER_RUN"], max(0, cap_day - today))
+    return min(
+        max_new or settings.PB["STORY_MAX_PER_RUN"],
+        max(0, settings.PB["STORY_MAX_PER_DAY"] - today),
+    )
+
+
+def build_roundup(game: Game, client=None) -> Story | None:
+    """One weekly roundup per game from the articles no briefing has covered (needs >= 3 items, >= 2 outlets)."""
+    if not _can_draft() or _remaining_budget(1) <= 0:
+        return None
+    now = timezone.now()
+    week_start = (now - timedelta(days=now.weekday())).replace(
+        hour=0, minute=0, second=0, microsecond=0
+    )
+    if (
+        Story.objects.filter(game=game, kind=Story.Kind.ROUNDUP, created_at__gte=week_start)
+        .exclude(status=Story.Status.REJECTED)
+        .exists()
+    ):
+        return None
+    left = sorted(
+        candidate_articles(game), key=lambda a: a.source_published_at or a.created_at, reverse=True
+    )[:8]
+    if (
+        len(left) < settings.PB["ROUNDUP_MIN_ITEMS"]
+        or len({registrable_domain(a.source_url) for a in left}) < 2
+    ):
+        return None
+    llm = client or SpendGuard(get_llm_client(), purpose="story")
+    try:
+        return create_draft(game, left, llm, kind=Story.Kind.ROUNDUP)
+    except LLMError as e:
+        log.info("roundup drafting skipped: %s", e)
+        return None
+
+
+def merge_articles(articles: list[Article], client=None) -> Story:
+    """Editor action: write ONE briefing from the selected articles. Raises ValueError with a reason."""
+    if platform.kill_switch_on():
+        raise ValueError("the kill switch is on")
+    if len(articles) < 2:
+        raise ValueError("select at least two articles")
+    games = {a.game_id for a in articles}
+    if len(games) != 1 or None in games:
+        raise ValueError("all selected articles must belong to the same game (assign games first)")
+    if any(not a.our_summary.strip() for a in articles):
+        raise ValueError("every selected article needs our summary first")
+    if len({registrable_domain(a.source_url) for a in articles}) < settings.PB["STORY_MIN_SOURCES"]:
+        raise ValueError("a briefing needs at least two independent outlets")
+    llm = client or SpendGuard(get_llm_client(), purpose="story")
+    try:
+        story = create_draft(articles[0].game, articles, llm, raise_on_fail=True)  # type: ignore[arg-type]
+    except LLMError as e:
+        raise ValueError(f"the writer is unavailable: {e}") from e
+    if story is None:
+        raise ValueError("could not create the draft")
+    return story
+
+
+def build_for_game(game: Game, client=None, *, max_new: int | None = None) -> list[Story]:
+    if not _can_draft():
+        return []
+    budget = _remaining_budget(max_new)
     if budget <= 0:
         return []
     llm = client or SpendGuard(get_llm_client(), purpose="story")
@@ -135,12 +211,17 @@ def build_for_game(game: Game, client=None, *, max_new: int | None = None) -> li
             story = create_draft(game, members, llm)
         except LLMUnavailable as e:
             log.info("story drafting paused: %s", e)
-            break
+            return made
         except LLMError as e:
             log.warning("story drafting LLM error: %s", e)
             continue
         if story:
             made.append(story)
+    # whatever is left becomes (at most) one weekly roundup for the game
+    if len(made) < budget:
+        roundup = build_roundup(game, llm)
+        if roundup:
+            made.append(roundup)
     return made
 
 

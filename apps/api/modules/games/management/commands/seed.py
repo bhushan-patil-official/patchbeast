@@ -24,6 +24,7 @@ def seed_anchor() -> Game:
             "tagline": "Release status by platform, patches and updates. PC first.",
             "platform": "pc",
             "is_placeholder": True,
+            "aliases": ["GTA 6", "GTA VI", "GTA6", "Grand Theft Auto 6", "Grand Theft Auto VI"],
             "vanity_path": ANCHOR,
             "hub_config": {
                 "platforms": ["pc", "ps5", "xbox_series"],

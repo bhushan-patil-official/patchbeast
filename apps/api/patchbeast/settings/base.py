@@ -178,11 +178,13 @@ PB: dict[str, Any] = {
     },
     "USER_AGENT": "PatchbeastBot/1.0 (+https://patchbeast.com/about#bot)",
     "NEAR_DUP_HAMMING": 3,
+    "RELEVANCE_REJECT_THRESHOLD": env.relevance_reject_threshold,
     "STORY_MAX_PER_DAY": env.story_max_per_day,
     "STORY_MAX_PER_RUN": 3,
     "STORY_SIMILARITY": env.story_similarity,
     "STORY_WINDOW_DAYS": env.story_window_days,
     "STORY_MIN_SOURCES": 2,
+    "ROUNDUP_MIN_ITEMS": 3,
     "SOURCE_MAX_BACKOFF_MINUTES": 360,
     "SOURCE_AUTO_DISABLE_DAYS": 7,
 }

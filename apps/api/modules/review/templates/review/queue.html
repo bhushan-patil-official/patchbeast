@@ -1,4 +1,5 @@
 {% extends "admin/base_site.html" %}
+{% load review_extras %}
 {% block extrastyle %}{{ block.super }}
 <style>
   .rq-help{margin:0 0 1rem;color:var(--body-quiet-color);font-size:.9rem}
@@ -8,6 +9,11 @@
   .rq-chip{padding:2px 8px;border-radius:999px;border:1px solid var(--border-color)}
   .rq-reason{color:#b45309;font-size:.85rem;margin:.25rem 0 .75rem}
   .rq-card input[type=text],.rq-card textarea{width:100%;box-sizing:border-box;margin:.2rem 0 .6rem}
+  .rq-filters{display:flex;flex-wrap:wrap;gap:.4rem;margin:0 0 1rem}
+  .rq-filters a{text-decoration:none}
+  .rq-on{background:#7C5CFF;color:#fff;border-color:#7C5CFF}
+  .rq-bulk{display:flex;flex-wrap:wrap;gap:.5rem;align-items:center;margin:0 0 1rem;padding:.6rem .8rem;border:1px dashed var(--border-color);border-radius:8px}
+  .rq-bulk button{cursor:pointer;padding:.35rem .8rem;border-radius:6px;border:1px solid var(--border-color)}
   .rq-actions{display:flex;gap:.5rem;flex-wrap:wrap}
   .rq-actions button{cursor:pointer;padding:.5rem 1rem;border-radius:6px;border:1px solid var(--border-color)}
   .rq-approve{background:#116a45;color:#fff;border-color:#116a45!important}
@@ -15,7 +21,7 @@
   kbd{border:1px solid var(--border-color);border-radius:4px;padding:0 5px;font-size:.8rem}
 </style>{% endblock %}
 {% block content %}
-<p class="rq-help">Keys: <kbd>j</kbd>/<kbd>k</kbd> next/prev · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>e</kbd> edit summary · <kbd>s</kbd> save edit.
+<p class="rq-help">Keys: <kbd>j</kbd>/<kbd>k</kbd> next/prev · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>e</kbd> edit summary · <kbd>s</kbd> save edit · <kbd>x</kbd> select.
   {{ items|length }} article(s), {{ stories|length }} story draft(s) and {{ videos|length }} video(s) waiting. Our summary only: never paste source text.</p>
 {% if stories %}<h2>Story drafts (written by the drafting assistant from our summaries; check every claim against the sources)</h2>{% endif %}
 {% for st in stories %}
@@ -37,11 +43,26 @@
 </form>
 {% endfor %}
 
+<nav class="rq-filters" aria-label="Filter by game">
+  <a href="?" class="rq-chip {% if not current %}rq-on{% endif %}">All ({{ items|length }}{% if current %}+{% endif %})</a>
+  {% for g in games %}<a href="?game={{ g.slug }}" class="rq-chip {% if current == g.slug %}rq-on{% endif %}">{{ g.name }} ({{ counts|get_item:g.slug|default:0 }})</a>{% endfor %}
+  <a href="?game=unassigned" class="rq-chip {% if current == 'unassigned' %}rq-on{% endif %}">Unassigned ({{ counts|get_item:'unassigned'|default:0 }})</a>
+</nav>
+
+<form id="bulk-form" class="rq-bulk" method="post" action="{% url 'admin:review_bulk' %}">
+  {% csrf_token %}<input type="hidden" name="return_game" value="{{ current }}">
+  <strong>Selected:</strong>
+  <button name="action" value="merge" title="Write ONE briefing from the selected articles (same game, 2+ outlets)">Merge into one briefing</button>
+  <button name="action" value="approve_linked" title="Publish each as a linked news item">Approve as linked news</button>
+  <button name="action" value="reject" class="rq-reject">Reject</button>
+  <label><input type="checkbox" id="rq-all"> select all</label>
+</form>
+
 {% for a in items %}
 <form class="rq-card" id="item-{{ a.pk }}" method="post" action="{% url act_url a.pk %}" data-index="{{ forloop.counter0 }}">
-  {% csrf_token %}
+  {% csrf_token %}<input type="hidden" name="return_game" value="{{ current }}">
   <div class="rq-meta">
-    <span class="rq-chip">{{ a.game.name }}</span>
+    <label class="rq-chip"><input type="checkbox" name="ids" value="{{ a.pk }}" form="bulk-form" data-key="x"> select</label>
     <span class="rq-chip">{{ a.source_name|default:"unknown source" }}</span>
     <span class="rq-chip">topic: {{ a.topic|default:"-" }}</span>
     <span class="rq-chip">confidence {{ a.confidence|floatformat:2 }}</span>
@@ -49,6 +70,11 @@
     <a href="{{ a.source_url }}" target="_blank" rel="noopener noreferrer nofollow">open source ↗</a>
   </div>
   {% if a.review_reason %}<div class="rq-reason">Why queued: {{ a.review_reason }}</div>{% endif %}
+  <label>Game {% if not a.game %}<strong style="color:#b45309">(not attached: choose one)</strong>{% endif %}
+    <select name="game">
+      {% if not a.game %}<option value="">— choose a game —</option>{% endif %}
+      {% for g in games %}<option value="{{ g.slug }}" {% if a.game and a.game.slug == g.slug %}selected{% endif %}>{{ g.name }}</option>{% endfor %}
+    </select></label>
   <label>Title<input type="text" name="title" value="{{ a.title }}" maxlength="300"></label>
   <label>Our summary (2-3 lines, original wording)<textarea name="summary" rows="3">{{ a.our_summary }}</textarea></label>
   <label>Tags (comma separated)<input type="text" name="tags" value="{{ a.tags|join:', ' }}"></label>
@@ -58,7 +84,7 @@
     <button class="rq-reject" name="action" value="reject" data-key="r">Reject</button>
   </div>
 </form>
-{% empty %}<p>🎉 Article queue is empty.</p>{% endfor %}
+{% empty %}<p>🎉 Article queue is empty{% if current %} for this filter{% endif %}.</p>{% endfor %}
 
 {% if videos %}<h2>Videos</h2>{% endif %}
 {% for v in videos %}
@@ -77,12 +103,14 @@
   function focusCard(n){ if(!cards.length)return; i=Math.max(0,Math.min(cards.length-1,n));
     cards.forEach(function(c,k){c.classList.toggle('rq-active',k===i)}); cards[i].scrollIntoView({block:'center',behavior:'smooth'}); }
   focusCard(0);
+  var all=document.getElementById('rq-all'); if(all){all.addEventListener('change',function(){document.querySelectorAll('input[name=ids]').forEach(function(c){c.checked=all.checked})})}
   document.addEventListener('keydown',function(e){
     var t=e.target.tagName; var typing=(t==='INPUT'||t==='TEXTAREA');
     if(e.key==='Escape'){document.activeElement.blur();return}
     if(typing||e.metaKey||e.ctrlKey||e.altKey||!cards.length)return;
     if(e.key==='j')focusCard(i+1); else if(e.key==='k')focusCard(i-1);
     else if(e.key==='e'){e.preventDefault();cards[i].querySelector('textarea').focus()}
+    else if(e.key==='x'){var cb=cards[i].querySelector('input[name=ids]'); if(cb){cb.checked=!cb.checked}}
     else if(['a','s','r'].indexOf(e.key)>-1){var b=cards[i].querySelector('[data-key="'+e.key+'"]'); if(b){b.click()}}
   });
 })();

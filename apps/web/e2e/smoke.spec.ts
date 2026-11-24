@@ -147,3 +147,12 @@ test("no ads or affiliate blocks while flags are off", async ({ page }) => {
   await expect(page.getByLabel("Advertisement")).toHaveCount(0);
   await expect(page.getByText("Affiliate link")).toHaveCount(0);
 });
+
+test("footer sticks to the bottom of the viewport on short pages (desktop)", async ({ page }) => {
+  await page.setViewportSize({ width: 1440, height: 1100 });
+  await page.goto("/contact"); // short page: content is far shorter than the viewport
+  const box = await page.locator("footer").boundingBox();
+  expect(box).not.toBeNull();
+  expect(Math.round(box!.y + box!.height)).toBeGreaterThanOrEqual(1100 - 1);
+  expect(await page.evaluate(() => document.documentElement.scrollHeight)).toBeLessThanOrEqual(1100);
+});

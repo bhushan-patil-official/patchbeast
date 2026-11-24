@@ -26,11 +26,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
       </head>
-      <body className="min-h-screen font-sans">
+      <body className="flex min-h-screen flex-col font-sans">
         <a href="#main" className="skip-link">Skip to content</a>
         <Ticker />
         <SiteHeader />
-        <main id="main" className="mx-auto max-w-6xl px-4 py-8">{children}</main>
+        <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-8">{children}</main>
         <SiteFooter />
         {PLAUSIBLE_DOMAIN && <Script defer data-domain={PLAUSIBLE_DOMAIN} src={PLAUSIBLE_SRC} strategy="afterInteractive" />}
       </body>

@@ -215,7 +215,7 @@ test("countdown switches to 'Released' once the date has passed", async ({ page 
 test("briefings: listed on news pages and hub, detail has citations, sources and AI disclosure", async ({ page }) => {
   await page.goto("/games/demo-launch/news");
   await expect(page.getByRole("heading", { name: "Briefings" })).toBeVisible();
-  const card = page.getByTestId("story-card").first();
+  const card = page.getByTestId("story-card").filter({ hasText: "DEMO briefing" });
   await expect(card).toContainText("Briefing");
   await expect(card).toContainText("Confirmed");
   await card.getByRole("heading").click({ force: true }); // card-wide link
@@ -231,9 +231,33 @@ test("briefings: listed on news pages and hub, detail has citations, sources and
   await page.goto("/news");
   await expect(page.getByRole("heading", { name: "Briefings" })).toBeVisible();
   await page.goto("/games/demo-launch");
-  await expect(page.getByTestId("story-card")).toHaveCount(1);
+  await expect(page.getByTestId("story-card")).toHaveCount(2); // the briefing and the roundup
 });
 
 test("unknown briefing is a 404", async ({ page }) => {
   expect((await page.goto("/games/demo-launch/news/does-not-exist"))?.status()).toBe(404);
+});
+
+test("news page filters by game, keeps the filter, labels briefings vs roundups", async ({ page }) => {
+  await page.goto("/news");
+  const filter = page.getByTestId("game-filter");
+  await expect(filter.getByRole("link", { name: "All games" })).toHaveAttribute("aria-current", "true");
+  await expect(page.getByTestId("story-card").first()).toBeVisible();
+  await expect(page.getByTestId("story-card").filter({ hasText: "Roundup" })).toHaveCount(1);
+  await expect(page.getByTestId("story-card").filter({ hasText: "Briefing" })).toHaveCount(1);
+
+  await filter.getByTestId("filter-gta-6-pc").click();
+  await expect(page).toHaveURL(/\/news\?game=gta-6-pc$/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Grand Theft Auto VI");
+  await expect(page.getByTestId("story-card")).toHaveCount(0);
+  await expect(page.getByTestId("no-linked")).toContainText("No curated news for Grand Theft Auto VI");
+  await expect(page.locator('meta[name="robots"]')).toHaveAttribute("content", /noindex/); // filtered view is not an index target
+
+  await page.getByTestId("game-filter").getByTestId("filter-demo-launch").click();
+  await expect(page).toHaveURL(/game=demo-launch/);
+  await expect(page.getByTestId("story-card")).toHaveCount(2);
+  await expect(page.getByRole("heading", { name: /DEMO headline/ })).toHaveCount(2);
+
+  await page.goto("/news?game=not-a-game"); // unknown filter falls back to all games
+  await expect(page.getByTestId("game-filter").getByRole("link", { name: "All games" })).toHaveAttribute("aria-current", "true");
 });

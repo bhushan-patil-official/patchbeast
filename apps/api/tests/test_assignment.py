@@ -406,3 +406,32 @@ def test_feed_serialises_unassigned_articles_and_stories_expose_kind(client, db,
     lst = client.get("/api/v1/stories/").json()["results"]
     assert lst[0]["kind"] == "roundup" and st.slug == lst[0]["slug"]
     assert not mail.outbox and timedelta(0) == timedelta(0)
+
+
+def test_reassign_games_command_fixes_stale_reasons(two):
+    from django.core.management import call_command
+
+    a, b = two
+    stuck = art(a, None, title="Beta Racer 3 gets a patch", url="https://x.example.com/s1")
+    kept = art(a, None, title="Hardware news roundup", url="https://x.example.com/s2")
+    loose = art(None, None, title="Nothing to match here", url="https://x.example.com/s3")
+    for x, why in (
+        (stuck, "model assigned a different game (beta)"),
+        (kept, "model could not assign a game"),
+        (loose, "model could not assign a game"),
+    ):
+        Article.objects.filter(pk=x.pk).update(status="queued", review_reason=why)
+    call_command("reassign_games", "--dry-run")
+    stuck.refresh_from_db()
+    assert stuck.game == a and "different game" in stuck.review_reason  # dry run changes nothing
+    call_command("reassign_games")
+    stuck.refresh_from_db()
+    kept.refresh_from_db()
+    loose.refresh_from_db()
+    assert stuck.game == b and "moved to Beta Racer" in stuck.review_reason
+    assert (
+        kept.game == a
+        and "kept from the source" in kept.review_reason
+        and "could not assign" not in kept.review_reason
+    )
+    assert loose.game is None and "assign one" in loose.review_reason

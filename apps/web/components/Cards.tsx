@@ -58,7 +58,7 @@ export function NewsCard({ a, showStatus }: { a: Schemas["Article"]; showStatus?
     <Card className="p-4">
       <div className="flex flex-wrap items-center gap-2">
         <SignalMeter level={a.verification} size="sm" />
-        <span className="font-mono text-xs text-fg-muted">{a.game_name}</span>
+        <span className="font-mono text-xs text-fg-muted">{a.game_name ?? "Unassigned"}</span>
         {showStatus && <span className="rounded border border-line px-1.5 font-mono text-[10px] uppercase text-fg-muted">{a.status}</span>}
         {a.published_at && <time dateTime={a.published_at} className="font-mono text-xs text-fg-muted">{a.published_at.slice(0, 10)}</time>}
       </div>

@@ -60,6 +60,17 @@ $C exec api python manage.py load_pack gta6             # loads it (idempotent)
 
 **Verify first.** The pack was compiled from search-result snippets; open each source and check dates, versions, sizes and wording (and the publisher's own support page for official notes) before loading. Afterwards edit or delete anything wrong in Admin → Patches / Releases / Articles. A page becomes indexable automatically once it has real, sourced content. To add your own pack, copy `gta6.json` and follow its structure.
 
+### Game assignment, general feeds and curating a high volume
+
+* **Aliases**: Admin -> Games -> *Aliases* (JSON list), e.g. `["GTA 6", "GTA VI", "Grand Theft Auto 6"]`. Add every spelling headlines use; they drive name matching and are sent to the model. (The `seed` command sets them for the anchor game.)
+* **Game-specific feed**: set the Source's *game*. The source's game is trusted unless the model AND a name match point elsewhere.
+* **General feed** (covers several games): leave the Source's *game* **empty**. Items are attached by name; unmatched/ambiguous ones show in the review queue under **Unassigned** with a game picker.
+* **Review queue** (`/admin/review/`): filter chips per game (with counts) and *Unassigned*; pick/change the game on a card and approve in one click; tick cards (or `x`) and use **Merge into one briefing** (same game, 2+ outlets), **Approve as linked news**, or **Reject**.
+* **Noise**: items the model is sure are not about a tracked game are rejected automatically (`RELEVANCE_REJECT_THRESHOLD`); they are kept in Admin -> Articles (filter *status = rejected*) if you need to check.
+* **Roundups**: leftovers become one weekly roundup draft per game; clear it in the same queue under *Story drafts*.
+* **Fix an existing backlog** (items stuck with "model could not assign a game"): `docker compose -f docker-compose.yml -f docker-compose.prod.yml exec api python manage.py reassign_games --dry-run`, then without `--dry-run`.
+* **Posts page**: `/news` lists briefings/roundups then linked news, with a game filter.
+
 ### Automated briefings (story drafts)
 
 Every 6 hours the system groups similar articles about the same development (needs two independent outlets) and drafts a short, cited briefing for your review. Nothing is published until you approve it.

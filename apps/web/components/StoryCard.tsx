@@ -7,7 +7,7 @@ export function StoryCard({ s }: { s: Schemas["StoryCard"] }) {
   return (
     <Card className="group relative p-4 transition-shadow hover:shadow-glow" data-testid="story-card">
       <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded border border-accent/50 bg-accent/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent-text">Briefing</span>
+        <span className="rounded border border-accent/50 bg-accent/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent-text">{s.kind === "roundup" ? "Roundup" : "Briefing"}</span>
         <SignalMeter level={s.verification} sources={s.source_count} size="sm" />
         <span className="font-mono text-xs text-fg-muted">{s.game_name}</span>
         {s.published_at && <time dateTime={s.published_at} className="font-mono text-xs text-fg-muted">{s.published_at.slice(0, 10)}</time>}

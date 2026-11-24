@@ -56,7 +56,7 @@ export default async function StoryPage({ params }: Props) {
       <GameNav game={game} current="news" />
       <article className="mx-auto max-w-3xl" data-testid="story">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="rounded border border-accent/50 bg-accent/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent-text">Briefing</span>
+          <span className="rounded border border-accent/50 bg-accent/10 px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wider text-accent-text">{s.kind === "roundup" ? "Roundup" : "Briefing"}</span>
           <SignalMeter level={s.verification} sources={s.source_count} size="sm" />
           {s.published_at && <time dateTime={s.published_at} className="font-mono text-xs text-fg-muted">{s.published_at.slice(0, 10)}</time>}
         </div>
@@ -97,7 +97,7 @@ export default async function StoryPage({ params }: Props) {
         </section>
 
         <p className="mt-8 rounded border border-line bg-surface-1 p-3 text-xs text-fg-muted" data-testid="story-disclosure">
-          This briefing was drafted by an AI assistant from our own short summaries of the linked reports, then
+          This {s.kind === "roundup" ? "roundup" : "briefing"} was drafted by an AI assistant from our own short summaries of the linked reports, then
           checked and approved by a person at {SITE_NAME} before publishing. The linked sources are authoritative:
           if something looks wrong, <Link className="text-accent-text underline" href="/contact">tell us</Link>.
         </p>

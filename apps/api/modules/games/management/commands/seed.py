@@ -168,6 +168,25 @@ def seed_demo() -> Game:
             "verification": Verification.CONFIRMED, "model": "demo", "published_at": now - timedelta(days=1),
         },
     )  # fmt: skip
+    Story.objects.get_or_create(
+        game=game, slug="demo-weekly-roundup",
+        defaults={
+            "title": "DEMO roundup: everything reported about the demo game this week",
+            "dek": "A sample weekly roundup: several smaller developments in one place, each with its sources.",
+            "kind": Story.Kind.ROUNDUP,
+            "blocks": [
+                {"text": "DEMO: the first paragraph covers one development in our own words and cites the source it relies on.", "sources": [0]},
+                {"text": "DEMO: the second paragraph covers a different, smaller development, so readers get the whole week in one page.", "sources": [1]},
+            ],
+            "key_points": ["DEMO: one development", "DEMO: another development"],
+            "sources": [
+                {"article_id": 0, "url": "https://example.com/demo-news-1", "name": "example.com", "title": "DEMO headline 1"},
+                {"article_id": 0, "url": "https://example.org/demo-news-2", "name": "example.org", "title": "DEMO headline 2"},
+            ],
+            "tags": ["demo"], "cluster_key": "demo-roundup", "status": Story.Status.PUBLISHED,
+            "verification": Verification.CONFIRMED, "model": "demo", "published_at": now - timedelta(hours=6),
+        },
+    )  # fmt: skip
     return game
 
 

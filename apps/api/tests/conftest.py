@@ -29,7 +29,13 @@ def game(db):
 
 @pytest.fixture
 def source(game):
-    return Source.objects.create(game=game, name="Example Newsroom", type="rss", url="https://news.example.com/feed.xml", official_feed=True)
+    return Source.objects.create(
+        game=game,
+        name="Example Newsroom",
+        type="rss",
+        url="https://news.example.com/feed.xml",
+        official_feed=True,
+    )
 
 
 @pytest.fixture

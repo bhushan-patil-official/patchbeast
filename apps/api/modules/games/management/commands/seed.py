@@ -50,7 +50,17 @@ def seed_anchor() -> Game:
          {"items_path": "items", "title_field": "title", "url_field": "url", "date_field": "date"}),
     ]  # fmt: skip
     for name, typ, url, cfg in placeholders:
-        Source.objects.get_or_create(game=game, name=name, defaults={"type": typ, "url": url, "config": cfg, "enabled": False, "is_placeholder": True})
+        Source.objects.get_or_create(
+            game=game,
+            name=name,
+            defaults={
+                "type": typ,
+                "url": url,
+                "config": cfg,
+                "enabled": False,
+                "is_placeholder": True,
+            },
+        )
     return game
 
 
@@ -76,7 +86,7 @@ def seed_demo() -> Game:
         "os": "Windows 11 64-bit", "cpu": "Intel Core i7-9700K / AMD Ryzen 5 3600", "gpu": "NVIDIA RTX 3060 / AMD RX 6600 XT",
         "ram_gb": 16, "storage_gb": 60, "cpu_ref": "amd-ryzen-5-3600", "gpu_ref": "nvidia-rtx-3060", "notes": "DEMO data",
         "source_url": "https://example.com/demo-requirements", "verification": Verification.REPORTED, "source_count": 1})  # fmt: skip
-    for i, (ver, days) in enumerate([("0.9.0", 21), ("0.9.1", 7)]):
+    for ver, days in [("0.9.0", 21), ("0.9.1", 7)]:
         p, created = Patch.objects.get_or_create(game=game, version=ver, defaults={
             "date": (now - timedelta(days=days)).date(), "notes_url": "https://example.com/demo-patch",
             "our_summary": f"DEMO: sample patch {ver} fixing placeholder issues.", "verification": Verification.CONFIRMED, "source_count": 2})  # fmt: skip
@@ -110,7 +120,9 @@ class Command(BaseCommand):
         SiteSetting.load()
         for key, note in [("ads", "Ad slots"), ("affiliate", "Affiliate hardware blocks"), ("newsletter", "Newsletter signup + digest"),
                           ("tier2_cheats", "Tier 2: cheats"), ("tier2_maps", "Tier 2: maps"), ("tier3_alerts", "Tier 3: alerts")]:  # fmt: skip
-            FeatureFlag.objects.get_or_create(key=key, defaults={"enabled": key == "newsletter", "note": note})
+            FeatureFlag.objects.get_or_create(
+                key=key, defaults={"enabled": key == "newsletter", "note": note}
+            )
         seed_anchor()
         self.stdout.write(self.style.SUCCESS(f"seeded anchor '{ANCHOR}' (placeholder, noindex)"))
         if demo:

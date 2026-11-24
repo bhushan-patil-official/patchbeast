@@ -49,7 +49,12 @@ def uploads_playlist(channel_id: str) -> str:
 
 
 class YouTubeFetcher:
-    def __init__(self, client: httpx.Client | None = None, quota: QuotaLedger | None = None, api_key: str | None = None):
+    def __init__(
+        self,
+        client: httpx.Client | None = None,
+        quota: QuotaLedger | None = None,
+        api_key: str | None = None,
+    ):
         self.client = client or make_client()
         self.quota = quota or CacheQuotaLedger()
         self.api_key = api_key if api_key is not None else settings.PB["YOUTUBE_API_KEY"]
@@ -63,7 +68,12 @@ class YouTubeFetcher:
         try:
             r = self.client.get(
                 "https://www.googleapis.com/youtube/v3/playlistItems",
-                params={"part": "snippet,contentDetails", "playlistId": playlist, "maxResults": 25, "key": self.api_key},
+                params={
+                    "part": "snippet,contentDetails",
+                    "playlistId": playlist,
+                    "maxResults": 25,
+                    "key": self.api_key,
+                },
             )
         except httpx.HTTPError as e:
             raise FetchError(f"network error: {e.__class__.__name__}") from e

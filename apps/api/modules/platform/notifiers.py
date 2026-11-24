@@ -43,7 +43,11 @@ class TelegramNotifier:
         client = self.client or httpx.Client(timeout=10)
         r = client.post(
             f"https://api.telegram.org/bot{self.token}/sendMessage",
-            json={"chat_id": self.chat_id, "text": f"*{subject}*\n{body}"[:4000], "parse_mode": "Markdown"},
+            json={
+                "chat_id": self.chat_id,
+                "text": f"*{subject}*\n{body}"[:4000],
+                "parse_mode": "Markdown",
+            },
         )
         r.raise_for_status()
 

@@ -41,13 +41,25 @@ class ReviewQueueAdmin(admin.ModelAdmin):
         action = request.POST.get("action")
         try:
             if action == "approve":
-                services.approve(pk, request.user, title=request.POST.get("title"), summary=request.POST.get("summary"), tags=request.POST.get("tags"))
+                services.approve(
+                    pk,
+                    request.user,
+                    title=request.POST.get("title"),
+                    summary=request.POST.get("summary"),
+                    tags=request.POST.get("tags"),
+                )
                 messages.success(request, "Approved and published.")
             elif action == "reject":
                 services.reject(pk, request.user, request.POST.get("reason", ""))
                 messages.info(request, "Rejected.")
             elif action == "save":
-                services.save_edit(pk, request.user, title=request.POST["title"], summary=request.POST["summary"], tags=request.POST.get("tags", ""))
+                services.save_edit(
+                    pk,
+                    request.user,
+                    title=request.POST["title"],
+                    summary=request.POST["summary"],
+                    tags=request.POST.get("tags", ""),
+                )
                 messages.success(request, "Saved.")
         except ValueError as e:
             messages.error(request, str(e))

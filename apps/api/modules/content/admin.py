@@ -9,7 +9,15 @@ from .models import Article, Change, Evidence, Patch, Requirement, Video
 
 @admin.register(Article)
 class ArticleAdmin(AuditAdmin):
-    list_display = ("title", "game", "status", "verification", "confidence", "source_name", "created_at")
+    list_display = (
+        "title",
+        "game",
+        "status",
+        "verification",
+        "confidence",
+        "source_name",
+        "created_at",
+    )
     list_filter = ("status", "game", "verification")
     search_fields = ("title", "source_url")
     readonly_fields = ("simhash", "canonical_url")
@@ -23,7 +31,16 @@ class PatchAdmin(AuditAdmin):
 
 @admin.register(Requirement)
 class RequirementAdmin(AuditAdmin):
-    list_display = ("game", "platform", "tier", "cpu", "gpu", "ram_gb", "verification", "is_placeholder")
+    list_display = (
+        "game",
+        "platform",
+        "tier",
+        "cpu",
+        "gpu",
+        "ram_gb",
+        "verification",
+        "is_placeholder",
+    )
     list_filter = ("game", "tier", "verification")
 
 
@@ -41,7 +58,10 @@ class VideoAdmin(AuditAdmin):
 
     @admin.display(description="link")
     def watch(self, obj):
-        return format_html('<a href="https://www.youtube.com/watch?v={}" target="_blank" rel="noopener">open</a>', obj.youtube_id)
+        return format_html(
+            '<a href="https://www.youtube.com/watch?v={}" target="_blank" rel="noopener">open</a>',
+            obj.youtube_id,
+        )
 
 
 @admin.action(description="Recompute verification for selected evidence subjects")

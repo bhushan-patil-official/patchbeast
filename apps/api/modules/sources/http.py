@@ -13,7 +13,9 @@ def make_client(transport: httpx.BaseTransport | None = None) -> httpx.Client:
     )
 
 
-def conditional_get(client: httpx.Client, url: str, etag: str, last_modified: str, extra_headers: dict | None = None):
+def conditional_get(
+    client: httpx.Client, url: str, etag: str, last_modified: str, extra_headers: dict | None = None
+):
     from .ports import FetchError
 
     headers = dict(extra_headers or {})

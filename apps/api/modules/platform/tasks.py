@@ -17,6 +17,7 @@ log = logging.getLogger(__name__)
     retry_jitter=True,
     acks_late=True,
     time_limit=30,
+    soft_time_limit=25,
 )
 def revalidate(tags: list[str], paths: list[str]) -> None:
     try:
@@ -25,7 +26,11 @@ def revalidate(tags: list[str], paths: list[str]) -> None:
         from celery import current_task
 
         if current_task and current_task.request.retries >= 5:
-            services.raise_alert("revalidate_failed", f"ISR revalidation failed for tags={tags} paths={paths}", dedupe_key="revalidate")
+            services.raise_alert(
+                "revalidate_failed",
+                f"ISR revalidation failed for tags={tags} paths={paths}",
+                dedupe_key="revalidate",
+            )
         raise
 
 
@@ -36,10 +41,16 @@ def check_alerts() -> None:
 
     n = services.current_5xx()
     if n >= settings.PB["ALERT_5XX_THRESHOLD"]:
-        services.raise_alert("5xx_rate", f"{n} server errors in the last 5 minutes", dedupe_key="5xx")
+        services.raise_alert(
+            "5xx_rate", f"{n} server errors in the last 5 minutes", dedupe_key="5xx"
+        )
     spent, cap = services.spend_today()
     if cap and spent >= cap * 9 / 10:
-        services.raise_alert("llm_spend_90", f"LLM spend ${spent:.4f} is >= 90% of daily cap ${cap}", dedupe_key=f"spend90-{spent//1}")
+        services.raise_alert(
+            "llm_spend_90",
+            f"LLM spend ${spent:.4f} is >= 90% of daily cap ${cap}",
+            dedupe_key=f"spend90-{spent//1}",
+        )
 
 
 @shared_task(name="platform.prune", time_limit=120)

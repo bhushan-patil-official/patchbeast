@@ -9,7 +9,8 @@ class SiteSetting(AuditModel):
     """Singleton (pk=1): kill switch + LLM spend cap/ledger."""
 
     kill_switch = models.BooleanField(
-        default=False, help_text="ON = pause fetching, LLM calls and auto-publishing. Read API keeps serving."
+        default=False,
+        help_text="ON = pause fetching, LLM calls and auto-publishing. Read API keeps serving.",
     )
     daily_llm_cap = models.DecimalField(max_digits=8, decimal_places=4, default=Decimal("1.0000"))
     daily_llm_spend = models.DecimalField(max_digits=10, decimal_places=6, default=Decimal("0"))

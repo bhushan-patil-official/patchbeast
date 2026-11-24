@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import Any
 
 from patchbeast.config import get_env, parse_database_url
 from patchbeast.logging import logging_config
@@ -144,7 +145,7 @@ DEFAULT_FROM_EMAIL = env.default_from_email
 EMAIL_TIMEOUT = 10
 
 # --- Patchbeast ---
-PB = {
+PB: dict[str, Any] = {
     "LLM_PROVIDER": env.llm_provider,
     "LLM_MODEL": env.llm_model,
     "ANTHROPIC_API_KEY": env.anthropic_api_key,

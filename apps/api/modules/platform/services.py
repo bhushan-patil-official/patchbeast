@@ -27,7 +27,11 @@ def set_kill_switch(on: bool, user=None) -> None:
     s.kill_switch = on
     s.updated_by = user
     s.save()
-    raise_alert("kill_switch", f"Kill switch turned {'ON' if on else 'OFF'}", dedupe_key=f"ks-{on}-{timezone.now():%Y%m%d%H%M}")
+    raise_alert(
+        "kill_switch",
+        f"Kill switch turned {'ON' if on else 'OFF'}",
+        dedupe_key=f"ks-{on}-{timezone.now():%Y%m%d%H%M}",
+    )
 
 
 def auto_publish_allowed() -> bool:
@@ -70,7 +74,16 @@ def reserve_spend(estimate: Decimal) -> None:
         raise SpendCapExceeded(f"daily cap {s.daily_llm_cap} reached")
 
 
-def settle_spend(reserved: Decimal, actual: Decimal, *, model: str, tokens_in: int, tokens_out: int, purpose: str, ok: bool = True) -> None:
+def settle_spend(
+    reserved: Decimal,
+    actual: Decimal,
+    *,
+    model: str,
+    tokens_in: int,
+    tokens_out: int,
+    purpose: str,
+    ok: bool = True,
+) -> None:
     with transaction.atomic():
         s = SiteSetting.objects.select_for_update().get(pk=1)
         _roll(s)
@@ -90,10 +103,14 @@ def spend_today() -> tuple[Decimal, Decimal]:
 
 
 # ---------- alerts ----------
-def raise_alert(kind: str, message: str, *, dedupe_key: str | None = None, cooldown_minutes: int | None = None) -> bool:
+def raise_alert(
+    kind: str, message: str, *, dedupe_key: str | None = None, cooldown_minutes: int | None = None
+) -> bool:
     """Send an alert through every configured Notifier unless the same key fired recently.
     Never raises (alerting must not break the caller)."""
-    cooldown = cooldown_minutes if cooldown_minutes is not None else settings.PB["ALERT_COOLDOWN_MINUTES"]
+    cooldown = (
+        cooldown_minutes if cooldown_minutes is not None else settings.PB["ALERT_COOLDOWN_MINUTES"]
+    )
     key = f"alert:{dedupe_key or kind}"
     if not cache.add(key, 1, timeout=cooldown * 60):
         return False
@@ -105,7 +122,12 @@ def raise_alert(kind: str, message: str, *, dedupe_key: str | None = None, coold
         except Exception:
             log.exception("notifier %s failed", n.name)
     try:
-        AlertEvent.objects.create(kind=kind, message=message[:2000], dedupe_key=dedupe_key or "", delivered_via=",".join(delivered))
+        AlertEvent.objects.create(
+            kind=kind,
+            message=message[:2000],
+            dedupe_key=dedupe_key or "",
+            delivered_via=",".join(delivered),
+        )
     except Exception:
         log.exception("could not persist alert")
     return True
@@ -137,7 +159,9 @@ def request_revalidation(tags: Iterable[str] = (), paths: Iterable[str] = ()) ->
     transaction.on_commit(lambda: revalidate.delay(tags, paths))
 
 
-def post_revalidation(tags: list[str], paths: list[str], client: httpx.Client | None = None) -> None:
+def post_revalidation(
+    tags: list[str], paths: list[str], client: httpx.Client | None = None
+) -> None:
     c = client or httpx.Client(timeout=10)
     r = c.post(
         settings.PB["REVALIDATE_URL"],

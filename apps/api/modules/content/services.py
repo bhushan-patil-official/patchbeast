@@ -5,6 +5,7 @@ Reported = one linked source; Rumour = none."""
 
 from datetime import date as date_t
 from datetime import datetime
+from typing import Any
 
 from django.conf import settings
 from django.db import transaction
@@ -37,10 +38,15 @@ def compute_verification(domains: set[str], has_video: bool = False) -> str:
     return Verification.RUMOUR
 
 
-def add_evidence(game: Game, subject_kind: str, subject_id: int, url: str, kind: str = Evidence.Kind.ARTICLE) -> Evidence:
+def add_evidence(
+    game: Game, subject_kind: str, subject_id: int, url: str, kind: str = Evidence.Kind.ARTICLE
+) -> Evidence:
     domain = registrable_domain(url)
     ev, _ = Evidence.objects.get_or_create(
-        subject_kind=subject_kind, subject_id=subject_id, domain=domain, defaults={"game": game, "url": url, "kind": kind}
+        subject_kind=subject_kind,
+        subject_id=subject_id,
+        domain=domain,
+        defaults={"game": game, "url": url, "kind": kind},
     )
     return ev
 
@@ -48,12 +54,14 @@ def add_evidence(game: Game, subject_kind: str, subject_id: int, url: str, kind:
 def recompute_verification(subject_kind: str, subject_id: int) -> tuple[str, str]:
     """Recompute and store verification for a subject. Returns (old, new)."""
     ev = list(Evidence.objects.filter(subject_kind=subject_kind, subject_id=subject_id))
-    new = compute_verification({e.domain for e in ev}, any(e.kind == Evidence.Kind.VIDEO for e in ev))
-    model = SUBJECT_MODELS[subject_kind]
+    new = compute_verification(
+        {e.domain for e in ev}, any(e.kind == Evidence.Kind.VIDEO for e in ev)
+    )
+    model: Any = SUBJECT_MODELS[SubjectKind(subject_kind)]
     obj = model.objects.get(pk=subject_id)
     field = "confidence" if subject_kind == SubjectKind.RELEASE else "verification"
     old = getattr(obj, field)
-    updates = {field: new}
+    updates: dict[str, Any] = {field: new}
     if hasattr(obj, "source_count"):
         updates["source_count"] = len({e.domain for e in ev})
     model.objects.filter(pk=subject_id).update(**updates)
@@ -83,7 +91,9 @@ def _fmt_date(d: date_t | None) -> str:
 
 
 @transaction.atomic
-def publish_release_fact(game: Game, *, date_: date_t, source_url: str, platform: str = "pc") -> Release:
+def publish_release_fact(
+    game: Game, *, date_: date_t, source_url: str, platform: str = "pc"
+) -> Release:
     cur = current_release(game, platform)
     if cur and cur.date == date_ and not cur.is_placeholder:
         add_evidence(game, SubjectKind.RELEASE, cur.pk, source_url)
@@ -92,8 +102,12 @@ def publish_release_fact(game: Game, *, date_: date_t, source_url: str, platform
             record_change(game, Change.Kind.RELEASE, f"Release date now {new.capitalize()}", detail=f"{date_.isoformat()} ({old} -> {new})",
                           source_url=source_url, verification=new, subject_kind=SubjectKind.RELEASE, subject_id=cur.pk)  # fmt: skip
         return cur
-    real_current = cur and not cur.is_placeholder and cur.date is not None
-    if real_current and VERIFICATION_RANK[Verification.REPORTED] < VERIFICATION_RANK[cur.confidence]:
+    real_current = cur is not None and not cur.is_placeholder and cur.date is not None
+    if (
+        cur is not None
+        and real_current
+        and VERIFICATION_RANK[Verification.REPORTED] < VERIFICATION_RANK[cur.confidence]
+    ):
         raise FactDeferred(f"conflicts with {cur.confidence} date {cur.date}; needs human review")
     new_rel, prev = games_services.set_current_release(game, date_=date_, confidence=Verification.REPORTED, source_url=source_url,
                                                        source_count=1, platform=platform)  # fmt: skip
@@ -106,9 +120,18 @@ def publish_release_fact(game: Game, *, date_: date_t, source_url: str, platform
 
 
 @transaction.atomic
-def publish_patch_fact(game: Game, *, version: str, date_: date_t | None, source_url: str, summary: str) -> Patch:
+def publish_patch_fact(
+    game: Game, *, version: str, date_: date_t | None, source_url: str, summary: str
+) -> Patch:
     patch, created = Patch.objects.get_or_create(
-        game=game, version=version, defaults={"date": date_, "notes_url": source_url, "our_summary": summary, "source_count": 1}
+        game=game,
+        version=version,
+        defaults={
+            "date": date_,
+            "notes_url": source_url,
+            "our_summary": summary,
+            "source_count": 1,
+        },
     )
     add_evidence(game, SubjectKind.PATCH, patch.pk, source_url)
     old, new = recompute_verification(SubjectKind.PATCH, patch.pk)
@@ -121,9 +144,17 @@ def publish_patch_fact(game: Game, *, version: str, date_: date_t | None, source
 
 @transaction.atomic
 def publish_requirement_fact(game: Game, *, fact, source_url: str) -> Requirement:
-    existing = Requirement.objects.filter(game=game, platform=fact.platform, tier=fact.req_tier).first()
-    if existing and not existing.is_placeholder and existing.verification == Verification.CONFIRMED and (
-        (existing.cpu, existing.gpu, existing.ram_gb) != (fact.cpu or "", fact.gpu or "", fact.ram_gb)
+    existing = Requirement.objects.filter(
+        game=game, platform=fact.platform, tier=fact.req_tier
+    ).first()
+    if (
+        existing
+        and not existing.is_placeholder
+        and existing.verification == Verification.CONFIRMED
+        and (
+            (existing.cpu, existing.gpu, existing.ram_gb)
+            != (fact.cpu or "", fact.gpu or "", fact.ram_gb)
+        )
     ):
         raise FactDeferred("conflicts with confirmed requirements; needs human review")
     req, _ = Requirement.objects.update_or_create(
@@ -157,9 +188,17 @@ def try_auto_publish_fact(article: Article, cls) -> tuple[bool, str]:
     game = article.game
     try:
         if fact.kind == "release_date":
-            publish_release_fact(game, date_=fact.release_date, source_url=article.source_url, platform=fact.platform)
+            publish_release_fact(
+                game, date_=fact.release_date, source_url=article.source_url, platform=fact.platform
+            )
         elif fact.kind == "patch":
-            publish_patch_fact(game, version=fact.patch_version, date_=fact.patch_date, source_url=article.source_url, summary=cls.summary)
+            publish_patch_fact(
+                game,
+                version=fact.patch_version,
+                date_=fact.patch_date,
+                source_url=article.source_url,
+                summary=cls.summary,
+            )
         else:
             publish_requirement_fact(game, fact=fact, source_url=article.source_url)
     except FactDeferred as e:
@@ -176,7 +215,14 @@ def queue_for_review(article: Article, reason: str) -> None:
 
 
 @transaction.atomic
-def approve_article(article: Article, user, *, title: str | None = None, summary: str | None = None, tags: list[str] | None = None) -> Article:
+def approve_article(
+    article: Article,
+    user,
+    *,
+    title: str | None = None,
+    summary: str | None = None,
+    tags: list[str] | None = None,
+) -> Article:
     if title is not None:
         article.title = title[:300]
     if summary is not None:
@@ -194,7 +240,9 @@ def approve_article(article: Article, user, *, title: str | None = None, summary
     article.save()
     record_change(article.game, Change.Kind.NEWS, article.title, detail=article.our_summary[:300], source_url=article.source_url,
                   verification=article.verification, subject_kind=SubjectKind.ARTICLE, subject_id=article.pk)  # fmt: skip
-    request_revalidation([*game_tags(article.game), "news"], ["/news", f"/games/{article.game.slug}", "/"])
+    request_revalidation(
+        [*game_tags(article.game), "news"], ["/news", f"/games/{article.game.slug}", "/"]
+    )
     return article
 
 
@@ -206,7 +254,9 @@ def reject_article(article: Article, user, reason: str = "") -> Article:
     article.reviewed_at, article.reviewed_by, article.updated_by = timezone.now(), user, user
     article.save()
     if was_published:
-        Change.objects.filter(subject_kind=SubjectKind.ARTICLE, subject_id=article.pk).update(is_public=False)
+        Change.objects.filter(subject_kind=SubjectKind.ARTICLE, subject_id=article.pk).update(
+            is_public=False
+        )
         request_revalidation([*game_tags(article.game), "news"], ["/news"])
     return article
 
@@ -228,7 +278,13 @@ def upsert_video(game: Game, source, item) -> tuple[Video | None, bool]:
 
 
 def publish_video_side_effects(video: Video) -> None:
-    add_evidence(video.game, SubjectKind.VIDEO, video.pk, f"https://www.youtube.com/watch?v={video.youtube_id}", Evidence.Kind.VIDEO)
+    add_evidence(
+        video.game,
+        SubjectKind.VIDEO,
+        video.pk,
+        f"https://www.youtube.com/watch?v={video.youtube_id}",
+        Evidence.Kind.VIDEO,
+    )
     record_change(video.game, Change.Kind.VIDEO, video.title, source_url=f"https://www.youtube.com/watch?v={video.youtube_id}",
                   verification=Verification.CONFIRMED, subject_kind=SubjectKind.VIDEO, subject_id=video.pk,
                   occurred_at=video.published_at)  # fmt: skip

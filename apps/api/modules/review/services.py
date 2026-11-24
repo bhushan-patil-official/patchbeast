@@ -7,7 +7,9 @@ from .models import ReviewAction
 
 
 def _log(article: Article, action: str, user, note: str = "") -> None:
-    ReviewAction.objects.create(article=article, action=action, note=note[:300], created_by=user, updated_by=user)
+    ReviewAction.objects.create(
+        article=article, action=action, note=note[:300], created_by=user, updated_by=user
+    )
 
 
 def parse_tags(raw: str) -> list[str]:
@@ -16,7 +18,9 @@ def parse_tags(raw: str) -> list[str]:
 
 def approve(article_id: int, user, *, title=None, summary=None, tags: str | None = None) -> Article:
     a = Article.objects.select_related("game").get(pk=article_id)
-    out = content.approve_article(a, user, title=title, summary=summary, tags=parse_tags(tags) if tags is not None else None)
+    out = content.approve_article(
+        a, user, title=title, summary=summary, tags=parse_tags(tags) if tags is not None else None
+    )
     _log(a, ReviewAction.Action.APPROVE, user)
     return out
 
@@ -47,8 +51,16 @@ def video_decision(video_id: int, user, approve_it: bool) -> None:
 
 
 def queue(limit: int = 50):
-    return Article.objects.filter(status=Article.Status.QUEUED).select_related("game", "source").order_by("-confidence", "created_at")[:limit]
+    return (
+        Article.objects.filter(status=Article.Status.QUEUED)
+        .select_related("game", "source")
+        .order_by("-confidence", "created_at")[:limit]
+    )
 
 
 def video_queue(limit: int = 20):
-    return Video.objects.filter(status=Video.Status.QUEUED).select_related("game").order_by("-published_at")[:limit]
+    return (
+        Video.objects.filter(status=Video.Status.QUEUED)
+        .select_related("game")
+        .order_by("-published_at")[:limit]
+    )

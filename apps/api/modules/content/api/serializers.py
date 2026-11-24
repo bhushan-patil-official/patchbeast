@@ -18,7 +18,18 @@ class ReleaseSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Release
-        fields = ["id", "platform", "date", "confidence", "source_url", "source_count", "note", "is_placeholder", "created_at", "countdown_mode"]
+        fields = [
+            "id",
+            "platform",
+            "date",
+            "confidence",
+            "source_url",
+            "source_count",
+            "note",
+            "is_placeholder",
+            "created_at",
+            "countdown_mode",
+        ]
 
     @extend_schema_field(serializers.ChoiceField(choices=["live", "unconfirmed"]))
     def get_countdown_mode(self, r: Release) -> str:
@@ -34,7 +45,18 @@ class ChangeSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Change
-        fields = ["id", "game_slug", "game_name", "kind", "title", "detail", "version_label", "source_url", "verification", "occurred_at"]
+        fields = [
+            "id",
+            "game_slug",
+            "game_name",
+            "kind",
+            "title",
+            "detail",
+            "version_label",
+            "source_url",
+            "verification",
+            "occurred_at",
+        ]
 
 
 class PatchSerializer(serializers.ModelSerializer):
@@ -42,7 +64,16 @@ class PatchSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Patch
-        fields = ["id", "version", "date", "notes_url", "our_summary", "verification", "source_count", "is_placeholder"]
+        fields = [
+            "id",
+            "version",
+            "date",
+            "notes_url",
+            "our_summary",
+            "verification",
+            "source_count",
+            "is_placeholder",
+        ]
 
 
 class RequirementSerializer(serializers.ModelSerializer):
@@ -83,7 +114,17 @@ class GameCardSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Game
-        fields = ["slug", "name", "short_name", "tagline", "platform", "is_placeholder", "release", "latest_changes", "seo"]
+        fields = [
+            "slug",
+            "name",
+            "short_name",
+            "tagline",
+            "platform",
+            "is_placeholder",
+            "release",
+            "latest_changes",
+            "seo",
+        ]
 
     @extend_schema_field(ReleaseSerializer(allow_null=True))
     def get_release(self, g: Game):
@@ -94,7 +135,9 @@ class GameCardSerializer(serializers.ModelSerializer):
 
     @extend_schema_field(ChangeSerializer(many=True))
     def get_latest_changes(self, g: Game):
-        return ChangeSerializer(selectors.public_changes(g, confirmed_only=True)[:3], many=True).data
+        return ChangeSerializer(
+            selectors.public_changes(g, confirmed_only=True)[:3], many=True
+        ).data
 
     @extend_schema_field(SeoSerializer)
     def get_seo(self, g: Game):

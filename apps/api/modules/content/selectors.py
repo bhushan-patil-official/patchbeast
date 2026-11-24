@@ -2,7 +2,7 @@
 
 from datetime import timedelta
 
-from django.db.models import Max, Q, QuerySet
+from django.db.models import Max, QuerySet
 from django.utils import timezone
 
 from modules.common.choices import Verification
@@ -38,7 +38,11 @@ def published_articles(game: Game | None = None) -> QuerySet:
 
 
 def feed_articles() -> QuerySet:
-    return Article.objects.exclude(status=Article.Status.REJECTED).select_related("game").order_by("-created_at")
+    return (
+        Article.objects.exclude(status=Article.Status.REJECTED)
+        .select_related("game")
+        .order_by("-created_at")
+    )
 
 
 def public_changes(game: Game | None = None, *, confirmed_only: bool = False) -> QuerySet:
@@ -56,7 +60,11 @@ def ticker_changes(limit: int = 10) -> QuerySet:
 
 def weekly_changes(since=None) -> QuerySet:
     since = since or timezone.now() - timedelta(days=7)
-    return public_changes(confirmed_only=True).filter(occurred_at__gte=since).order_by("game__name", "-occurred_at")
+    return (
+        public_changes(confirmed_only=True)
+        .filter(occurred_at__gte=since)
+        .order_by("game__name", "-occurred_at")
+    )
 
 
 def seo_for_game(game: Game) -> dict:
@@ -110,6 +118,7 @@ def hub_for_game(game: Game) -> dict:
 
 
 def count_needs_review() -> int:
-    return Article.objects.filter(status=Article.Status.QUEUED).count() + Video.objects.filter(status=Video.Status.QUEUED).count()
-
-
+    return (
+        Article.objects.filter(status=Article.Status.QUEUED).count()
+        + Video.objects.filter(status=Video.Status.QUEUED).count()
+    )

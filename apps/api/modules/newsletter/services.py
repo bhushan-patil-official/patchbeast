@@ -21,7 +21,10 @@ class NewsletterDisabled(Exception):
 
 def _links(sub: Subscriber) -> tuple[str, str]:
     site = settings.SITE_URL
-    return f"{site}/newsletter/confirm?token={sub.confirm_token}", f"{site}/api/v1/newsletter/unsubscribe/?token={sub.unsub_token}"
+    return (
+        f"{site}/newsletter/confirm?token={sub.confirm_token}",
+        f"{site}/api/v1/newsletter/unsubscribe/?token={sub.unsub_token}",
+    )
 
 
 def subscribe(email: str, *, source: str = "", mailer: Mailer | None = None) -> None:
@@ -29,13 +32,19 @@ def subscribe(email: str, *, source: str = "", mailer: Mailer | None = None) -> 
     if not flag_enabled("newsletter"):
         raise NewsletterDisabled
     email = email.strip().lower()
-    sub, created = Subscriber.objects.get_or_create(email=email, defaults={"signup_source": source[:60]})
+    sub, created = Subscriber.objects.get_or_create(
+        email=email, defaults={"signup_source": source[:60]}
+    )
     if sub.active:
         return
     if sub.unsubscribed_at and not created:
         sub.unsubscribed_at = None  # re-subscribing requires a fresh confirmation
         sub.confirmed = False
-    if sub.confirmation_sent_at and timezone.now() - sub.confirmation_sent_at < RESEND_AFTER and not created:
+    if (
+        sub.confirmation_sent_at
+        and timezone.now() - sub.confirmation_sent_at < RESEND_AFTER
+        and not created
+    ):
         return
     confirm_url, _ = _links(sub)
     (mailer or get_mailer()).send(
@@ -76,7 +85,9 @@ def iso_week(dt=None) -> str:
 
 def build_digest(since=None) -> tuple[str, str, int]:
     changes = list(content_selectors.weekly_changes(since))
-    lines, html = ["Confirmed changes this week (each links to its source):", ""], ["<h2>Confirmed changes this week</h2>"]
+    lines, html = ["Confirmed changes this week (each links to its source):", ""], [
+        "<h2>Confirmed changes this week</h2>"
+    ]
     by_game: dict[str, list] = {}
     for c in changes:
         by_game.setdefault(c.game.name, []).append(c)
@@ -84,15 +95,23 @@ def build_digest(since=None) -> tuple[str, str, int]:
         lines.append(game)
         html.append(f"<h3>{escape(game)}</h3><ul>")
         for c in items:
-            lines.append(f"  - {c.title}" + (f" — {c.detail}" if c.detail else "") + (f"\n    source: {c.source_url}" if c.source_url else ""))
+            lines.append(
+                f"  - {c.title}"
+                + (f" — {c.detail}" if c.detail else "")
+                + (f"\n    source: {c.source_url}" if c.source_url else "")
+            )
             link = f' (<a href="{escape(c.source_url)}">source</a>)' if c.source_url else ""
-            html.append(f"<li><strong>{escape(c.title)}</strong>{' — ' + escape(c.detail) if c.detail else ''}{link}</li>")
+            html.append(
+                f"<li><strong>{escape(c.title)}</strong>{' — ' + escape(c.detail) if c.detail else ''}{link}</li>"
+            )
         html.append("</ul>")
         lines.append("")
     return "\n".join(lines), "".join(html), len(changes)
 
 
-def send_digest_to(sub: Subscriber, week: str, text: str, html: str, mailer: Mailer | None = None) -> bool:
+def send_digest_to(
+    sub: Subscriber, week: str, text: str, html: str, mailer: Mailer | None = None
+) -> bool:
     if not sub.active or sub.last_digest_week == week:
         return False
     _, unsub = _links(sub)
@@ -117,7 +136,15 @@ def start_weekly_digest() -> tuple[DigestRun | None, list[int]]:
         return run, []
     _, _, count = build_digest()
     run.item_count = count
-    ids = list(Subscriber.objects.filter(confirmed=True, unsubscribed_at__isnull=True).values_list("id", flat=True)) if count else []
+    ids = (
+        list(
+            Subscriber.objects.filter(confirmed=True, unsubscribed_at__isnull=True).values_list(
+                "id", flat=True
+            )
+        )
+        if count
+        else []
+    )
     run.recipients = len(ids)
     run.save()
     return run, ids

@@ -17,7 +17,9 @@ class Game(AuditModel):
     is_placeholder = models.BooleanField(
         default=False, help_text="Seeded placeholder: page stays noindex until real content exists."
     )
-    allow_index = models.BooleanField(default=True, help_text="Master switch: False forces noindex.")
+    allow_index = models.BooleanField(
+        default=True, help_text="Master switch: False forces noindex."
+    )
     hub_config = models.JSONField(
         default=dict,
         blank=True,
@@ -50,7 +52,9 @@ class Release(AuditModel):
         ordering = ["-created_at"]
         constraints = [
             models.UniqueConstraint(
-                fields=["game", "platform"], condition=Q(is_current=True), name="one_current_release"
+                fields=["game", "platform"],
+                condition=Q(is_current=True),
+                name="one_current_release",
             )
         ]
 

@@ -44,14 +44,30 @@ def game_hub(request, slug: str):
 @api_view(["GET"])
 def game_patches(request, slug: str):
     g = _game_or_404(slug)
-    return Response(s.PatchesPageSerializer({"game": g, "items": selectors.Patch.objects.filter(game=g), "seo": selectors.seo_subpage(g, "patches")}).data)
+    return Response(
+        s.PatchesPageSerializer(
+            {
+                "game": g,
+                "items": selectors.Patch.objects.filter(game=g),
+                "seo": selectors.seo_subpage(g, "patches"),
+            }
+        ).data
+    )
 
 
 @extend_schema(responses=s.VideosPageSerializer, tags=["games"])
 @api_view(["GET"])
 def game_videos(request, slug: str):
     g = _game_or_404(slug)
-    return Response(s.VideosPageSerializer({"game": g, "items": selectors.published_videos(g), "seo": selectors.seo_subpage(g, "videos")}).data)
+    return Response(
+        s.VideosPageSerializer(
+            {
+                "game": g,
+                "items": selectors.published_videos(g),
+                "seo": selectors.seo_subpage(g, "videos"),
+            }
+        ).data
+    )
 
 
 @extend_schema(responses=s.RequirementsPageSerializer, tags=["games"])
@@ -61,7 +77,12 @@ def game_requirements(request, slug: str):
     from modules.content.models import Requirement
     from modules.games.selectors import current_release
 
-    data = {"game": g, "items": Requirement.objects.filter(game=g), "release": current_release(g), "seo": selectors.seo_subpage(g, "requirements")}
+    data = {
+        "game": g,
+        "items": Requirement.objects.filter(game=g),
+        "release": current_release(g),
+        "seo": selectors.seo_subpage(g, "requirements"),
+    }
     return Response(s.RequirementsPageSerializer(data).data)
 
 

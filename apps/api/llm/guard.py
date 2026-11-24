@@ -11,7 +11,8 @@ from .ports import LLMClient, LLMError, LLMResponse, LLMUnavailable
 
 def cost_usd(tokens_in: int, tokens_out: int) -> Decimal:
     return (
-        Decimal(str(settings.PB["LLM_PRICE_IN"])) * tokens_in + Decimal(str(settings.PB["LLM_PRICE_OUT"])) * tokens_out
+        Decimal(str(settings.PB["LLM_PRICE_IN"])) * tokens_in
+        + Decimal(str(settings.PB["LLM_PRICE_OUT"])) * tokens_out
     ) / Decimal(1_000_000)
 
 
@@ -33,10 +34,23 @@ class SpendGuard:
         try:
             resp = self.inner.complete(system, user, max_tokens)
         except LLMError:
-            platform.settle_spend(reserved, Decimal("0"), model=self.model, tokens_in=0, tokens_out=0, purpose=self.purpose, ok=False)
+            platform.settle_spend(
+                reserved,
+                Decimal("0"),
+                model=self.model,
+                tokens_in=0,
+                tokens_out=0,
+                purpose=self.purpose,
+                ok=False,
+            )
             raise
         actual = cost_usd(resp.input_tokens, resp.output_tokens)
         platform.settle_spend(
-            reserved, actual, model=resp.model, tokens_in=resp.input_tokens, tokens_out=resp.output_tokens, purpose=self.purpose
+            reserved,
+            actual,
+            model=resp.model,
+            tokens_in=resp.input_tokens,
+            tokens_out=resp.output_tokens,
+            purpose=self.purpose,
         )
         return resp

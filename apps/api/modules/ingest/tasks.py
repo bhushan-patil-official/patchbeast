@@ -30,12 +30,22 @@ def poll_due_sources() -> int:
     return n
 
 
-@shared_task(name="ingest.fetch_source", base=AlertingTask, time_limit=90, soft_time_limit=75, acks_late=True)
+@shared_task(
+    name="ingest.fetch_source", base=AlertingTask, time_limit=90, soft_time_limit=75, acks_late=True
+)
 def fetch_source(source_id: int) -> None:
     services.fetch_and_ingest(source_id)
 
 
-@shared_task(name="llm.classify_article", base=AlertingTask, bind=True, max_retries=3, time_limit=120, soft_time_limit=100, acks_late=True)
+@shared_task(
+    name="llm.classify_article",
+    base=AlertingTask,
+    bind=True,
+    max_retries=3,
+    time_limit=120,
+    soft_time_limit=100,
+    acks_late=True,
+)
 def classify_article_task(self, article_id: int, lead: str) -> str:
     try:
         return services.classify_article(article_id, lead)
@@ -67,7 +77,9 @@ def renew_websub() -> int:
     n = 0
     for s in Source.objects.filter(type=Source.Type.WEBSUB, enabled=True, is_placeholder=False):
         try:
-            websub.subscribe(s.config["channel_id"], f"{base}/hooks/websub/{s.pk}/", s.config.get("secret", ""))
+            websub.subscribe(
+                s.config["channel_id"], f"{base}/hooks/websub/{s.pk}/", s.config.get("secret", "")
+            )
             n += 1
         except Exception:
             log.exception("websub renew failed for %s", s.pk)

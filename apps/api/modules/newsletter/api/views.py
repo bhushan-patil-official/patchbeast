@@ -37,11 +37,18 @@ def confirm(request):
     return Response({"ok": ok}, status=200 if ok else 404)
 
 
-@extend_schema(request=TokenSerializer, parameters=[OpenApiParameter("token", str, required=False)], responses=OkSerializer, tags=["newsletter"])
+@extend_schema(
+    request=TokenSerializer,
+    parameters=[OpenApiParameter("token", str, required=False)],
+    responses=OkSerializer,
+    tags=["newsletter"],
+)
 @api_view(["POST", "GET"])
 @throttle_classes([NewsletterThrottle])
 def unsubscribe(request):
     """POST (page button / RFC 8058 one-click). GET shows a minimal confirmation for plain mail-client links."""
-    token = request.data.get("token") if request.method == "POST" else request.query_params.get("token")
+    token = (
+        request.data.get("token") if request.method == "POST" else request.query_params.get("token")
+    )
     ok = bool(token) and services.unsubscribe(str(token))
     return Response({"ok": ok}, status=200 if ok else 404)

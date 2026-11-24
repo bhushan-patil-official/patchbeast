@@ -58,10 +58,12 @@ def find_near_duplicate(game: Game, h: int, window_days: int = 30) -> Article | 
     if h == 0:
         return None
     since = timezone.now() - timedelta(days=window_days)
-    rows = Article.objects.filter(game=game, created_at__gte=since, simhash__isnull=False).values_list("id", "simhash")[:2000]
+    rows = Article.objects.filter(
+        game=game, created_at__gte=since, simhash__isnull=False
+    ).values_list("id", "simhash")[:2000]
     limit = settings.PB["NEAR_DUP_HAMMING"]
     for pk, sh in rows:
-        if hamming(h, to_unsigned(sh)) <= limit:
+        if sh is not None and hamming(h, to_unsigned(sh)) <= limit:
             return Article.objects.get(pk=pk)
     return None
 
@@ -102,7 +104,9 @@ def ingest_items(source: Source, items: list[RawItem], *, dispatch: bool = True)
             if registrable_domain(dup.source_url) == registrable_domain(item.url):
                 stats.near_dup_skipped += 1  # repost on the same site
                 continue
-            content.add_evidence(game, SubjectKind.ARTICLE, dup.pk, item.url)  # independent corroboration
+            content.add_evidence(
+                game, SubjectKind.ARTICLE, dup.pk, item.url
+            )  # independent corroboration
             content.recompute_verification(SubjectKind.ARTICLE, dup.pk)
             reason = f"possible duplicate of #{dup.pk} (different outlet)"
         article = Article.objects.create(
@@ -130,8 +134,15 @@ def fetch_and_ingest(source_id: int, *, fetcher=None) -> IngestStats | None:
     try:
         result = (fetcher or get_fetcher(source.type)).fetch(source_services.to_spec(source))
     except FetchError as e:
-        source_services.mark_failure(source, str(e), retry_after=e.retry_after, permanent=e.permanent)
-        FetchLog.objects.create(source=source, ok=False, error=str(e)[:500], duration_ms=int((time.monotonic() - t0) * 1000))
+        source_services.mark_failure(
+            source, str(e), retry_after=e.retry_after, permanent=e.permanent
+        )
+        FetchLog.objects.create(
+            source=source,
+            ok=False,
+            error=str(e)[:500],
+            duration_ms=int((time.monotonic() - t0) * 1000),
+        )
         return None
     stats = ingest_items(source, result.items)
     source_services.mark_success(source, result)
@@ -158,8 +169,10 @@ def apply_classification(article: Article, cls: Classification) -> None:
         return
     article.save()
     published, why = content.try_auto_publish_fact(article, cls)
-    if published:
-        content.queue_for_review(article, f"fact auto-published ({cls.fact.kind}); approve to also list as news")
+    if published and cls.fact:
+        content.queue_for_review(
+            article, f"fact auto-published ({cls.fact.kind}); approve to also list as news"
+        )
     else:
         content.queue_for_review(article, article.review_reason or why or "needs human review")
 
@@ -173,7 +186,9 @@ def classify_article(article_id: int, lead: str, *, client=None) -> str:
         return "paused"
     games = dict(Game.objects.filter(enabled=True).values_list("slug", "name"))
     llm = client or SpendGuard(get_llm_client())
-    item = ItemForLLM(title=article.title, lead=lead, url=article.source_url, source_name=article.source_name)
+    item = ItemForLLM(
+        title=article.title, lead=lead, url=article.source_url, source_name=article.source_name
+    )
     try:
         cls = classify(llm, item, games)
     except LLMUnavailable as e:
@@ -196,5 +211,3 @@ def requeue_stuck(minutes: int = 30) -> int:
         content.queue_for_review(a, a.review_reason or "classification did not complete")
         n += 1
     return n
-
-

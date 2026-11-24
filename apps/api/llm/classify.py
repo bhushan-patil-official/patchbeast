@@ -1,7 +1,8 @@
 """LLM classification + ORIGINAL summary, validated against a schema.
 
 The source lead is untrusted text (prompt-injection surface): it is fenced as data, the model has
-no tools, and the output is schema-validated + overlap-checked. Failure after one retry -> review."""
+no tools, and the output is schema-validated + overlap-checked. Failure after one retry -> review.
+"""
 
 import json
 import re
@@ -42,7 +43,9 @@ class Fact(BaseModel):
 
 class Classification(BaseModel):
     game_slug: str | None
-    topic: Literal["release_date", "patch", "requirements", "trailer", "news", "rumour", "hardware", "other"]
+    topic: Literal[
+        "release_date", "patch", "requirements", "trailer", "news", "rumour", "hardware", "other"
+    ]
     confidence: float = Field(ge=0, le=1)
     tags: list[str] = Field(default_factory=list, max_length=6)
     summary: str = Field(min_length=20, max_length=420)
@@ -116,7 +119,10 @@ def parse_response(text: str, allowed_slugs: set[str], source_text: str) -> Clas
     try:
         c = Classification.model_validate(data)
     except ValidationError as e:
-        raise ValueError("schema: " + "; ".join(f"{'.'.join(map(str, x['loc']))}: {x['msg']}" for x in e.errors()[:4])) from e
+        raise ValueError(
+            "schema: "
+            + "; ".join(f"{'.'.join(map(str, x['loc']))}: {x['msg']}" for x in e.errors()[:4])
+        ) from e
     if c.game_slug is not None and c.game_slug not in allowed_slugs:
         raise ValueError(f"unknown game_slug {c.game_slug!r}")
     if copies_source(c.summary, source_text):
@@ -131,8 +137,13 @@ def classify(client: LLMClient, item: ItemForLLM, games: dict[str, str]) -> Clas
     system, user = build_prompt(item, games)
     source_text = f"{item.title} {item.lead}"
     error = ""
-    for attempt in range(2):
-        prompt = user if not error else user + f"\n\nYour previous reply was rejected: {error}. Reply again with valid JSON only."
+    for _attempt in range(2):
+        prompt = (
+            user
+            if not error
+            else user
+            + f"\n\nYour previous reply was rejected: {error}. Reply again with valid JSON only."
+        )
         try:
             resp = client.complete(system, prompt)
         except LLMError:

@@ -1,4 +1,4 @@
-from django.core.management.base import BaseCommand, CommandError
+from django.core.management.base import BaseCommand
 
 from modules.platform.services import kill_switch_on, set_kill_switch
 

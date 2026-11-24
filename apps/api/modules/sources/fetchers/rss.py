@@ -47,5 +47,7 @@ class RssFetcher:
                 )  # fmt: skip
             )
         return FetchResult(
-            items=items, etag=r.headers.get("ETag", ""), last_modified=r.headers.get("Last-Modified", "")
+            items=items,
+            etag=r.headers.get("ETag", ""),
+            last_modified=r.headers.get("Last-Modified", ""),
         )

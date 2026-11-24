@@ -21,7 +21,11 @@ def set_current_release(
     user=None,
 ) -> tuple[Release, Release | None]:
     """Replace the current release row (history kept). Returns (new, previous)."""
-    prev = Release.objects.select_for_update().filter(game=game, platform=platform, is_current=True).first()
+    prev = (
+        Release.objects.select_for_update()
+        .filter(game=game, platform=platform, is_current=True)
+        .first()
+    )
     if prev:
         prev.is_current = False
         prev.save(update_fields=["is_current", "updated_at"])

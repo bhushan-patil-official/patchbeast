@@ -41,7 +41,9 @@ class JsonApiFetcher:
     def fetch(self, spec: SourceSpec) -> FetchResult:
         if not spec.official_feed and not robots.allowed(spec.url, self.client):
             raise FetchError("blocked by robots.txt", permanent=True)
-        r = conditional_get(self.client, spec.url, spec.etag, spec.last_modified, {"Accept": "application/json"})
+        r = conditional_get(
+            self.client, spec.url, spec.etag, spec.last_modified, {"Accept": "application/json"}
+        )
         if r.status_code == 304:
             return FetchResult(not_modified=True, etag=spec.etag, last_modified=spec.last_modified)
         try:
@@ -67,4 +69,8 @@ class JsonApiFetcher:
                     external_id=str(dig(row, cfg.get("id_field", "id")) or url),
                 )  # fmt: skip
             )
-        return FetchResult(items=items, etag=r.headers.get("ETag", ""), last_modified=r.headers.get("Last-Modified", ""))
+        return FetchResult(
+            items=items,
+            etag=r.headers.get("ETag", ""),
+            last_modified=r.headers.get("Last-Modified", ""),
+        )

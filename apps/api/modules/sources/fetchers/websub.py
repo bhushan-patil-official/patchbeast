@@ -27,7 +27,13 @@ def topic_url(channel_id: str) -> str:
     return f"https://www.youtube.com/xml/feeds/videos.xml?channel_id={channel_id}"
 
 
-def subscribe(channel_id: str, callback: str, secret: str, client: httpx.Client | None = None, lease: int = 432000) -> None:
+def subscribe(
+    channel_id: str,
+    callback: str,
+    secret: str,
+    client: httpx.Client | None = None,
+    lease: int = 432000,
+) -> None:
     c = client or make_client()
     r = c.post(
         HUB,

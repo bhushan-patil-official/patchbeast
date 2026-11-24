@@ -13,12 +13,21 @@ def send_weekly_digest() -> int:
     if kill_switch_on():
         return 0
     run, ids = services.start_weekly_digest()
+    if run is None:
+        return 0
     for sid in ids:
         send_digest_to_subscriber.delay(sid, run.iso_week)
     return len(ids)
 
 
-@shared_task(name="mail.send_digest_to_subscriber", base=AlertingTask, bind=True, max_retries=4, time_limit=60, acks_late=True)
+@shared_task(
+    name="mail.send_digest_to_subscriber",
+    base=AlertingTask,
+    bind=True,
+    max_retries=4,
+    time_limit=60,
+    acks_late=True,
+)
 def send_digest_to_subscriber(self, subscriber_id: int, week: str) -> bool:
     sub = Subscriber.objects.get(pk=subscriber_id)
     text, html, _ = services.build_digest()

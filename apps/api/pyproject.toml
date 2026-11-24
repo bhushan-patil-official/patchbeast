@@ -12,8 +12,9 @@ select = ["E", "F", "I", "B", "UP", "DJ", "S", "C4", "SIM"]
 ignore = ["S101", "DJ001", "E501", "B008", "S311", "S324"]
 
 [tool.ruff.lint.per-file-ignores]
-"tests/*" = ["S", "B"]
-"patchbeast/settings/*" = ["F403", "F405"]
+"tests/*" = ["S", "B", "E702", "E731", "E401", "I001", "F401", "SIM"]
+"patchbeast/settings/*" = ["F403", "F405", "S105", "S106"]
+"patchbeast/config.py" = ["S105"]
 
 [tool.mypy]
 python_version = "3.12"

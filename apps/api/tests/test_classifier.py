@@ -6,13 +6,28 @@ from llm.classify import ClassificationFailed, ItemForLLM, classify, copies_sour
 from llm.fake import FakeLLMClient
 
 GAMES = {"test-game": "Test Game"}
-ITEM = ItemForLLM(title="Patch 1.02 now live", lead="Version 1.02 is rolling out today with stability fixes", url="https://x.example.com/p", source_name="X")
+ITEM = ItemForLLM(
+    title="Patch 1.02 now live",
+    lead="Version 1.02 is rolling out today with stability fixes",
+    url="https://x.example.com/p",
+    source_name="X",
+)
 
 
 def good(**over):
-    d = {"game_slug": "test-game", "topic": "patch", "confidence": 0.93, "tags": ["Patch", " pc "],
-         "summary": "A new update is going out to players that tightens stability and adds a graphics option.",
-         "fact": {"kind": "patch", "platform": "pc", "patch_version": "1.02", "patch_date": "2026-11-02"}}
+    d = {
+        "game_slug": "test-game",
+        "topic": "patch",
+        "confidence": 0.93,
+        "tags": ["Patch", " pc "],
+        "summary": "A new update is going out to players that tightens stability and adds a graphics option.",
+        "fact": {
+            "kind": "patch",
+            "platform": "pc",
+            "patch_version": "1.02",
+            "patch_date": "2026-11-02",
+        },
+    }
     d.update(over)
     return json.dumps(d)
 
@@ -39,20 +54,31 @@ def test_invalid_twice_fails_for_review():
         classify(FakeLLMClient(["{}", '{"topic":"x"}']), ITEM, GAMES)
 
 
-@pytest.mark.parametrize("bad", [
-    good(confidence=1.7), good(topic="gossip"), good(game_slug="other-game"), good(summary="too short"),
-    good(fact={"kind": "release_date", "platform": "pc"}), good(fact={"kind": "requirement", "req_tier": "min"}),
-])
+@pytest.mark.parametrize(
+    "bad",
+    [
+        good(confidence=1.7),
+        good(topic="gossip"),
+        good(game_slug="other-game"),
+        good(summary="too short"),
+        good(fact={"kind": "release_date", "platform": "pc"}),
+        good(fact={"kind": "requirement", "req_tier": "min"}),
+    ],
+)
 def test_schema_violations_rejected(bad):
     with pytest.raises(ValueError):
         parse_response(bad, set(GAMES), "")
 
 
 def test_summary_that_copies_source_is_rejected():
-    copied = good(summary="Version 1.02 is rolling out today with stability fixes and more words follow here.")
+    copied = good(
+        summary="Version 1.02 is rolling out today with stability fixes and more words follow here."
+    )
     with pytest.raises(ValueError, match="copies"):
         parse_response(copied, set(GAMES), f"{ITEM.title} {ITEM.lead}")
-    assert not copies_source("completely different original words here in this summary text okay", ITEM.lead)
+    assert not copies_source(
+        "completely different original words here in this summary text okay", ITEM.lead
+    )
 
 
 def test_prompt_fences_untrusted_item():

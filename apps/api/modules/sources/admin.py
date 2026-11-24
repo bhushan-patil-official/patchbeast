@@ -19,7 +19,16 @@ def enable(modeladmin, request, queryset):
 
 @admin.register(Source)
 class SourceAdmin(AuditAdmin):
-    list_display = ("name", "game", "type", "enabled", "health", "consecutive_failures", "last_fetched", "is_placeholder")
+    list_display = (
+        "name",
+        "game",
+        "type",
+        "enabled",
+        "health",
+        "consecutive_failures",
+        "last_fetched",
+        "is_placeholder",
+    )
     list_filter = ("type", "health", "enabled", "game")
     search_fields = ("name", "url")
     actions = [fetch_now, enable]

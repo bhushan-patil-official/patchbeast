@@ -1,18 +1,23 @@
+import httpx
 import pytest
 
+from modules.sources import services as source_services
 from modules.sources.fetchers.json_api import JsonApiFetcher
 from modules.sources.fetchers.rss import RssFetcher
 from modules.sources.fetchers.websub import parse_notification, verify_signature
 from modules.sources.fetchers.youtube import CacheQuotaLedger, YouTubeFetcher, uploads_playlist
 from modules.sources.ports import FetchError, SourceSpec
-from modules.sources import services as source_services
 
 from .conftest import make_client
-import httpx
 
 
 def spec(**kw):
-    base = dict(id=1, type="rss", url="https://news.example.com/feed.xml", official_feed=True)
+    base = {
+        "id": 1,
+        "type": "rss",
+        "url": "https://news.example.com/feed.xml",
+        "official_feed": True,
+    }
     base.update(kw)
     return SourceSpec(**base)
 
@@ -22,7 +27,11 @@ def test_rss_parses_fixture_and_skips_broken_items(fixture_text):
 
     def handler(req: httpx.Request):
         seen["inm"] = req.headers.get("If-None-Match")
-        return httpx.Response(200, text=fixture_text("newsroom.xml"), headers={"ETag": '"v1"', "Last-Modified": "Mon, 02 Nov 2026 10:00:00 GMT"})
+        return httpx.Response(
+            200,
+            text=fixture_text("newsroom.xml"),
+            headers={"ETag": '"v1"', "Last-Modified": "Mon, 02 Nov 2026 10:00:00 GMT"},
+        )
 
     res = RssFetcher(make_client(handler)).fetch(spec())
     assert [i.title for i in res.items] == ["Patch 1.02 now live", "Release date announced for PC"]
@@ -38,7 +47,9 @@ def test_rss_conditional_get_sends_validators_and_handles_304():
         assert req.headers["If-Modified-Since"] == "Mon, 02 Nov 2026 10:00:00 GMT"
         return httpx.Response(304)
 
-    res = RssFetcher(make_client(handler)).fetch(spec(etag='"v1"', last_modified="Mon, 02 Nov 2026 10:00:00 GMT"))
+    res = RssFetcher(make_client(handler)).fetch(
+        spec(etag='"v1"', last_modified="Mon, 02 Nov 2026 10:00:00 GMT")
+    )
     assert res.not_modified and res.items == []
 
 
@@ -53,7 +64,9 @@ def test_rss_respects_robots_disallow(db):
     assert e.value.permanent
 
 
-@pytest.mark.parametrize("status,permanent,retry", [(404, True, None), (429, False, 120), (500, False, None)])
+@pytest.mark.parametrize(
+    "status,permanent,retry", [(404, True, None), (429, False, 120), (500, False, None)]
+)
 def test_http_errors_map_to_fetch_error(status, permanent, retry):
     headers = {"Retry-After": "120"} if status == 429 else {}
     with pytest.raises(FetchError) as e:
@@ -67,10 +80,22 @@ def test_rss_garbage_is_an_error():
 
 
 def test_json_api_fetcher_maps_config(fixture_text):
-    cfg = {"items_path": "data.items", "title_field": "headline", "url_field": "path", "url_prefix": "https://x.example.com", "date_field": "published", "lead_field": "blurb"}
-    res = JsonApiFetcher(make_client(lambda r: httpx.Response(200, text=fixture_text("api_news.json")))).fetch(spec(type="api", url="https://x.example.com/api", config=cfg))
+    cfg = {
+        "items_path": "data.items",
+        "title_field": "headline",
+        "url_field": "path",
+        "url_prefix": "https://x.example.com",
+        "date_field": "published",
+        "lead_field": "blurb",
+    }
+    res = JsonApiFetcher(
+        make_client(lambda r: httpx.Response(200, text=fixture_text("api_news.json")))
+    ).fetch(spec(type="api", url="https://x.example.com/api", config=cfg))
     assert len(res.items) == 1
-    assert res.items[0].url == "https://x.example.com/n/hotfix-103" and res.items[0].published_at.day == 4
+    assert (
+        res.items[0].url == "https://x.example.com/n/hotfix-103"
+        and res.items[0].published_at.day == 4
+    )
 
 
 def test_youtube_uses_playlist_items_never_search(db, fixture_text):
@@ -85,13 +110,17 @@ def test_youtube_uses_playlist_items_never_search(db, fixture_text):
     res = f.fetch(spec(type="youtube", url="", config={"channel_id": "UCabcdefghijklmnopqrstuv"}))
     assert all("playlistItems" in u and "search" not in u for u in urls)
     assert "playlistId=UUabcdefghijklmnopqrstuv" in urls[0]
-    assert [v.external_id for v in res.items] == ["abc123XYZ_-", "def456"] and res.items[0].kind == "video"
+    assert [v.external_id for v in res.items] == ["abc123XYZ_-", "def456"] and res.items[
+        0
+    ].kind == "video"
     assert ledger.used() == 1
 
 
 def test_youtube_quota_guard_stops_calls(db):
     ledger = CacheQuotaLedger(daily=10, margin=5)
-    f = YouTubeFetcher(make_client(lambda r: httpx.Response(200, json={"items": []})), ledger, api_key="k")
+    f = YouTubeFetcher(
+        make_client(lambda r: httpx.Response(200, json={"items": []})), ledger, api_key="k"
+    )
     s = spec(type="youtube", url="", config={"channel_id": "UCabcdefghijklmnopqrstuv"})
     for _ in range(5):
         f.fetch(s)
@@ -106,7 +135,8 @@ def test_youtube_bad_channel_id():
 
 
 def test_websub_signature_and_parse(fixture_text):
-    import hashlib, hmac
+    import hashlib
+    import hmac
 
     body = fixture_text("websub_push.xml").encode()
     sig = "sha1=" + hmac.new(b"s3cret", body, hashlib.sha1).hexdigest()
@@ -122,7 +152,10 @@ def test_failure_backoff_and_health(source):
         source_services.mark_failure(source, "HTTP 500")
     source.refresh_from_db()
     assert source.health == "failing" and source.consecutive_failures == 3 and source.enabled
-    assert source_services.backoff_minutes(1, 10) == 10 and source_services.backoff_minutes(4, 10) == 80
+    assert (
+        source_services.backoff_minutes(1, 10) == 10
+        and source_services.backoff_minutes(4, 10) == 80
+    )
     assert source_services.backoff_minutes(20, 10) == 360  # capped
 
 

@@ -8,7 +8,15 @@ from .models import Game, Release
 class ReleaseInline(admin.TabularInline):
     model = Release
     extra = 0
-    fields = ("platform", "date", "confidence", "source_url", "is_current", "is_placeholder", "note")
+    fields = (
+        "platform",
+        "date",
+        "confidence",
+        "source_url",
+        "is_current",
+        "is_placeholder",
+        "note",
+    )
 
 
 @admin.register(Game)
@@ -21,5 +29,13 @@ class GameAdmin(AuditAdmin):
 
 @admin.register(Release)
 class ReleaseAdmin(AuditAdmin):
-    list_display = ("game", "platform", "date", "confidence", "is_current", "is_placeholder", "created_at")
+    list_display = (
+        "game",
+        "platform",
+        "date",
+        "confidence",
+        "is_current",
+        "is_placeholder",
+        "created_at",
+    )
     list_filter = ("confidence", "is_current", "game")

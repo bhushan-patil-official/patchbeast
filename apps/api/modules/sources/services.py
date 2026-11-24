@@ -20,9 +20,9 @@ def to_spec(source: Source) -> SourceSpec:
 
 def due_sources(now=None):
     now = now or timezone.now()
-    return Source.objects.filter(enabled=True, is_placeholder=False, next_fetch_at__lte=now, game__enabled=True).exclude(
-        type=Source.Type.WEBSUB
-    )
+    return Source.objects.filter(
+        enabled=True, is_placeholder=False, next_fetch_at__lte=now, game__enabled=True
+    ).exclude(type=Source.Type.WEBSUB)
 
 
 def mark_success(source: Source, result: FetchResult) -> None:
@@ -44,7 +44,9 @@ def backoff_minutes(failures: int, base: int = 10) -> int:
     return min(base * (2 ** max(0, failures - 1)), settings.PB["SOURCE_MAX_BACKOFF_MINUTES"])
 
 
-def mark_failure(source: Source, message: str, *, retry_after: int | None = None, permanent: bool = False) -> None:
+def mark_failure(
+    source: Source, message: str, *, retry_after: int | None = None, permanent: bool = False
+) -> None:
     now = timezone.now()
     source.consecutive_failures += 1
     source.last_error = message[:500]
@@ -53,7 +55,11 @@ def mark_failure(source: Source, message: str, *, retry_after: int | None = None
     if retry_after:
         delay = max(delay, retry_after // 60 + 1)
     source.next_fetch_at = now + timedelta(minutes=delay)
-    source.health = Source.Health.FAILING if source.consecutive_failures >= 3 or permanent else Source.Health.DEGRADED
+    source.health = (
+        Source.Health.FAILING
+        if source.consecutive_failures >= 3 or permanent
+        else Source.Health.DEGRADED
+    )
     disable = permanent and source.consecutive_failures >= 2
     if now - source.failing_since > timedelta(days=settings.PB["SOURCE_AUTO_DISABLE_DAYS"]):
         disable = True
@@ -65,5 +71,5 @@ def mark_failure(source: Source, message: str, *, retry_after: int | None = None
             "fetcher_failure",
             f"Source '{source.name}' ({source.type}) failing x{source.consecutive_failures}: {message}"
             + (" — AUTO-DISABLED" if disable else ""),
-            dedupe_key=f"fetch-{source.id}",
+            dedupe_key=f"fetch-{source.id}-{int(disable)}",
         )

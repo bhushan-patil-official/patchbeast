@@ -24,4 +24,9 @@ class FakeLLMClient:
             text = item
         else:
             text = "{}"
-        return LLMResponse(text=text, input_tokens=len(system + user) // 4, output_tokens=len(text) // 4, model=self.model)
+        return LLMResponse(
+            text=text,
+            input_tokens=len(system + user) // 4,
+            output_tokens=len(text) // 4,
+            model=self.model,
+        )

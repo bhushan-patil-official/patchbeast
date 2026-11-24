@@ -132,6 +132,58 @@
                 }
             }
         },
+        "/api/v1/games/{slug}/changes/": {
+            "get": {
+                "operationId": "v1_games_changes_list",
+                "description": "Full change log (timeline) for one game, newest first, paginated.",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedChangeList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/games/{slug}/patches/": {
             "get": {
                 "operationId": "v1_games_patches_retrieve",
@@ -164,6 +216,55 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/PatchesPage"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/games/{slug}/patches/{platform}/{version}/": {
+            "get": {
+                "operationId": "v1_games_patches_retrieve_2",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "platform",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "version",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PatchDetail"
                                 }
                             }
                         },
@@ -928,6 +1029,37 @@
                     }
                 }
             },
+            "PaginatedChangeList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Change"
+                        }
+                    }
+                }
+            },
             "Patch": {
                 "type": "object",
                 "properties": {
@@ -958,6 +1090,17 @@
                         "type": "string",
                         "readOnly": true
                     },
+                    "highlights": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "size_note": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "e.g. '603.7 MB'"
+                    },
                     "verification": {
                         "$ref": "#/components/schemas/VerificationEnum"
                     },
@@ -972,14 +1115,56 @@
                 },
                 "required": [
                     "date",
+                    "highlights",
                     "id",
                     "is_placeholder",
                     "notes_url",
                     "our_summary",
                     "platform",
+                    "size_note",
                     "source_count",
                     "verification",
                     "version"
+                ]
+            },
+            "PatchDetail": {
+                "type": "object",
+                "properties": {
+                    "game": {
+                        "$ref": "#/components/schemas/GameCard"
+                    },
+                    "seo": {
+                        "$ref": "#/components/schemas/Seo"
+                    },
+                    "patch": {
+                        "$ref": "#/components/schemas/Patch"
+                    },
+                    "sources": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SourceRef"
+                        }
+                    },
+                    "siblings": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Patch"
+                        }
+                    },
+                    "changes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Change"
+                        }
+                    }
+                },
+                "required": [
+                    "changes",
+                    "game",
+                    "patch",
+                    "seo",
+                    "siblings",
+                    "sources"
                 ]
             },
             "PatchesPage": {
@@ -1262,6 +1447,26 @@
                 "required": [
                     "lastmod",
                     "path"
+                ]
+            },
+            "SourceRef": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "domain": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "domain",
+                    "kind",
+                    "url"
                 ]
             },
             "StatusEnum": {

@@ -1,0 +1,81 @@
+{
+  "pack": "gta6",
+  "game_slug": "gta-6-pc",
+  "notice": "Starter content compiled from public reports found on 2026-11-24 (search snippets, not the full pages). Wording is ours; every item links its sources. VERIFY against the publisher's own support pages before publishing, then edit or delete anything wrong in Admin.",
+  "releases": [
+    {
+      "platform": "ps5",
+      "date": "2026-11-19",
+      "sources": [
+        "https://www.forbes.com/sites/erikkain/2026/11/16/gta-6-release-date-time-ps5-xbox-series-x-download-size-day-one-update/",
+        "https://www.redbull.com/int-en/gta-6-updates-patch-notes"
+      ]
+    },
+    {
+      "platform": "xbox_series",
+      "date": "2026-11-19",
+      "sources": [
+        "https://www.forbes.com/sites/erikkain/2026/11/16/gta-6-release-date-time-ps5-xbox-series-x-download-size-day-one-update/",
+        "https://www.redbull.com/int-en/gta-6-updates-patch-notes"
+      ]
+    }
+  ],
+  "patches": [
+    {
+      "version": "01.002.000",
+      "date": "2026-11-13",
+      "platforms": ["ps5", "xbox_series"],
+      "summary": "Pre-launch build reported ahead of release. No official patch notes were reported for it.",
+      "highlights": [],
+      "size_note": {},
+      "sources": ["https://www.redbull.com/int-en/gta-6-updates-patch-notes"]
+    },
+    {
+      "version": "01.002.001",
+      "date": "2026-11-16",
+      "platforms": ["ps5", "xbox_series"],
+      "summary": "Second pre-launch build, reported a few days before release. No official patch notes were reported for it.",
+      "highlights": [],
+      "size_note": {},
+      "sources": [
+        "https://www.redbull.com/int-en/gta-6-updates-patch-notes",
+        "https://allthings.how/gta-6-patch-notes-update-history/"
+      ]
+    },
+    {
+      "version": "01.002.002",
+      "date": "2026-11-23",
+      "platforms": ["ps5", "xbox_series"],
+      "summary": "The first update after launch. Outlets report fixes for crashes and several gameplay bugs. Check the publisher's support page for its own list.",
+      "highlights": [
+        "Fixes several crashes",
+        "Addresses a weather-related bug",
+        "Fixes an autosave problem",
+        "Corrects some phone-call triggers",
+        "Fixes an issue that stopped players from losing their Wanted Level"
+      ],
+      "size_note": { "ps5": "about 604 MB", "xbox_series": "about 1.6 GB" },
+      "sources": [
+        "https://opencritic.com/news/40204/new-gta-6-update-patch-notes-released-for-november-23",
+        "https://space4games.com/en/games-en/gta-6-patch-notes-updates/",
+        "https://tech.yahoo.com/gaming/articles/gta-6-patch-notes-nov-172455177.html"
+      ]
+    }
+  ],
+  "articles": [
+    {
+      "title": "GTA VI is out on PS5 and Xbox Series X|S",
+      "source_url": "https://www.forbes.com/sites/erikkain/2026/11/16/gta-6-release-date-time-ps5-xbox-series-x-download-size-day-one-update/",
+      "source_name": "Forbes",
+      "summary": "Outlets report the game launched on 19 November 2026 on PlayStation 5 and Xbox Series X|S. We have no verified PC release date yet.",
+      "tags": ["release", "consoles"]
+    },
+    {
+      "title": "First post-launch update, 01.002.002, is rolling out",
+      "source_url": "https://opencritic.com/news/40204/new-gta-6-update-patch-notes-released-for-november-23",
+      "source_name": "OpenCritic",
+      "summary": "A small update landed on 23 November with crash and bug fixes. Download sizes are reported as roughly 604 MB on PS5 and 1.6 GB on Xbox Series X|S.",
+      "tags": ["patch", "update"]
+    }
+  ]
+}

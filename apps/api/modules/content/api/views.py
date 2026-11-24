@@ -130,3 +130,31 @@ class FeedList(generics.ListAPIView):
 @api_view(["GET"])
 def sitemap(request):
     return Response(s.SitemapEntrySerializer(selectors.sitemap_entries(), many=True).data)
+
+
+@extend_schema(responses=s.PatchDetailSerializer, tags=["games"])
+@api_view(["GET"])
+def patch_detail(request, slug: str, platform: str, version: str):
+    g = _game_or_404(slug)
+    patch = selectors.Patch.objects.filter(game=g, platform=platform, version=version).first()
+    if patch is None:
+        raise NotFound("patch not found")
+    sources = selectors.patch_sources(patch)
+    siblings = selectors.Patch.objects.filter(game=g, version=version).exclude(pk=patch.pk)
+    changes = selectors.public_changes(g).filter(subject_kind="patch", subject_id=patch.pk)
+    data = {
+        "game": g, "patch": patch, "siblings": siblings, "changes": changes[:5],
+        "sources": [{"url": e.url, "domain": e.domain, "kind": e.kind} for e in sources],
+        "seo": selectors.seo_for_patch(g, patch, len(sources)),
+    }  # fmt: skip
+    return Response(s.PatchDetailSerializer(data).data)
+
+
+@extend_schema(tags=["games"])
+class GameChangesList(generics.ListAPIView):
+    """Full change log (timeline) for one game, newest first, paginated."""
+
+    serializer_class = s.ChangeSerializer
+
+    def get_queryset(self):
+        return selectors.public_changes(_game_or_404(self.kwargs["slug"]))

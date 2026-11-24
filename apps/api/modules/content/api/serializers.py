@@ -69,6 +69,7 @@ class ChangeSerializer(serializers.ModelSerializer):
 
 class PatchSerializer(serializers.ModelSerializer):
     verification = serializers.ChoiceField(choices=Verification.choices)
+    highlights = serializers.ListField(child=serializers.CharField())
 
     class Meta:
         model = Patch
@@ -79,6 +80,8 @@ class PatchSerializer(serializers.ModelSerializer):
             "date",
             "notes_url",
             "our_summary",
+            "highlights",
+            "size_note",
             "verification",
             "source_count",
             "is_placeholder",
@@ -197,6 +200,19 @@ class HubSerializer(serializers.Serializer):
 class SubpageSerializer(serializers.Serializer):
     game = GameCardSerializer()
     seo = SeoSerializer()
+
+
+class SourceRefSerializer(serializers.Serializer):
+    url = serializers.URLField()
+    domain = serializers.CharField()
+    kind = serializers.CharField()
+
+
+class PatchDetailSerializer(SubpageSerializer):
+    patch = PatchSerializer()
+    sources = SourceRefSerializer(many=True)
+    siblings = PatchSerializer(many=True)
+    changes = ChangeSerializer(many=True)
 
 
 class PatchesPageSerializer(SubpageSerializer):

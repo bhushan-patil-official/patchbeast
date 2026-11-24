@@ -69,6 +69,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/games/{slug}/changes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Full change log (timeline) for one game, newest first, paginated. */
+        get: operations["v1_games_changes_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/games/{slug}/patches/": {
         parameters: {
             query?: never;
@@ -77,6 +94,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["v1_games_patches_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/games/{slug}/patches/{platform}/{version}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_games_patches_retrieve_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -328,6 +361,21 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Article"][];
         };
+        PaginatedChangeList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Change"][];
+        };
         Patch: {
             readonly id: number;
             readonly platform: string;
@@ -337,9 +385,20 @@ export interface components {
             /** Format: uri */
             readonly notes_url: string;
             readonly our_summary: string;
+            highlights: string[];
+            /** @description e.g. '603.7 MB' */
+            readonly size_note: string;
             verification: components["schemas"]["VerificationEnum"];
             readonly source_count: number;
             readonly is_placeholder: boolean;
+        };
+        PatchDetail: {
+            game: components["schemas"]["GameCard"];
+            seo: components["schemas"]["Seo"];
+            patch: components["schemas"]["Patch"];
+            sources: components["schemas"]["SourceRef"][];
+            siblings: components["schemas"]["Patch"][];
+            changes: components["schemas"]["Change"][];
         };
         PatchesPage: {
             game: components["schemas"]["GameCard"];
@@ -411,6 +470,12 @@ export interface components {
             path: string;
             /** Format: date-time */
             lastmod: string | null;
+        };
+        SourceRef: {
+            /** Format: uri */
+            url: string;
+            domain: string;
+            kind: string;
         };
         /**
          * @description * `new` - New
@@ -558,6 +623,32 @@ export interface operations {
             };
         };
     };
+    v1_games_changes_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedChangeList"];
+                };
+            };
+        };
+    };
     v1_games_patches_retrieve: {
         parameters: {
             query?: {
@@ -577,6 +668,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PatchesPage"];
+                };
+            };
+        };
+    };
+    v1_games_patches_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                platform: string;
+                slug: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatchDetail"];
                 };
             };
         };

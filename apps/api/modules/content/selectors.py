@@ -10,7 +10,7 @@ from modules.common.platforms import PLATFORMS, label
 from modules.games.models import Game
 from modules.games.selectors import current_releases, hub_path, release_history
 
-from .models import Article, Change, Patch, Requirement, Video
+from .models import Article, Change, Evidence, Patch, Requirement, SubjectKind, Video
 
 
 def real_releases(game: Game) -> list:
@@ -115,6 +115,20 @@ def sitemap_entries() -> list[dict]:
         for sub in ("patches", "videos", "requirements"):
             if seo_subpage(g, sub)["indexable"]:
                 out.append({"path": f"/games/{g.slug}/{sub}", "lastmod": last})
+        if published_articles(g).exists():
+            newest = published_articles(g).aggregate(m=Max("published_at"))["m"]
+            out.append({"path": f"/games/{g.slug}/news", "lastmod": newest})
+        if has_public_changes(g):
+            out.append({"path": f"/games/{g.slug}/timeline", "lastmod": last})
+        for patch in real_patches(g):
+            n = Evidence.objects.filter(subject_kind=SubjectKind.PATCH, subject_id=patch.pk).count()
+            if seo_for_patch(g, patch, n)["indexable"]:
+                out.append(
+                    {
+                        "path": f"/games/{g.slug}/patches/{patch.platform}/{patch.version}",
+                        "lastmod": patch.updated_at,
+                    }
+                )
     return out
 
 
@@ -138,3 +152,25 @@ def count_needs_review() -> int:
         Article.objects.filter(status=Article.Status.QUEUED).count()
         + Video.objects.filter(status=Video.Status.QUEUED).count()
     )
+
+
+def patch_sources(patch: Patch) -> list[Evidence]:
+    return list(
+        Evidence.objects.filter(subject_kind=SubjectKind.PATCH, subject_id=patch.pk).order_by(
+            "created_at"
+        )
+    )
+
+
+def seo_for_patch(game: Game, patch: Patch, n_sources: int) -> dict:
+    base = seo_for_game(game)
+    if not base["indexable"]:
+        return base
+    real = (
+        not patch.is_placeholder and n_sources >= 1 and bool(patch.our_summary or patch.highlights)
+    )
+    return {"indexable": real, "reason": "" if real else "patch page has no sourced content yet"}
+
+
+def has_public_changes(game: Game) -> bool:
+    return public_changes(game).exists()

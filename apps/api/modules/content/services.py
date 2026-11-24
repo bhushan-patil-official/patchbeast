@@ -3,8 +3,8 @@
 Verification model: Confirmed = 2 independent sources (distinct registrable domains) or a video;
 Reported = one linked source; Rumour = none."""
 
+from datetime import UTC, datetime, time
 from datetime import date as date_t
-from datetime import datetime
 from typing import Any
 
 from django.conf import settings
@@ -134,6 +134,8 @@ def publish_patch_fact(
     source_url: str,
     summary: str,
     platform: str = "pc",
+    highlights: list[str] | None = None,
+    size_note: str = "",
 ) -> Patch:
     patch, created = Patch.objects.get_or_create(
         game=game,
@@ -143,6 +145,8 @@ def publish_patch_fact(
             "date": date_,
             "notes_url": source_url,
             "our_summary": summary,
+            "highlights": (highlights or [])[:8],
+            "size_note": size_note,
             "source_count": 1,
         },
     )
@@ -150,7 +154,8 @@ def publish_patch_fact(
     old, new = recompute_verification(SubjectKind.PATCH, patch.pk)
     if created or old != new:
         record_change(game, Change.Kind.PATCH, f"Patch {version}{_plat_suffix(game, platform)}", detail=summary[:300], version_label=version, source_url=source_url,
-                      verification=new, subject_kind=SubjectKind.PATCH, subject_id=patch.pk, occurred_at=None)  # fmt: skip
+                      verification=new, subject_kind=SubjectKind.PATCH, subject_id=patch.pk,
+                      occurred_at=datetime.combine(date_, time(12, 0), tzinfo=UTC) if date_ else None)  # fmt: skip
     patch.refresh_from_db()
     return patch
 

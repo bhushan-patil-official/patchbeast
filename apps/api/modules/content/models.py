@@ -72,6 +72,10 @@ class Patch(AuditModel):
     date = models.DateField(null=True, blank=True)
     notes_url = models.URLField(max_length=1000, blank=True)
     our_summary = models.TextField(blank=True)
+    highlights = models.JSONField(
+        default=list, blank=True, help_text="Our own short bullets (original wording, max 8)"
+    )
+    size_note = models.CharField(max_length=120, blank=True, help_text="e.g. '603.7 MB'")
     verification = models.CharField(
         max_length=10, choices=Verification.choices, default=Verification.REPORTED
     )

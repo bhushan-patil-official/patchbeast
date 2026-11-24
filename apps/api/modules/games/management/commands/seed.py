@@ -19,9 +19,9 @@ def seed_anchor() -> Game:
     game, _ = Game.objects.update_or_create(
         slug=ANCHOR,
         defaults={
-            "name": "Grand Theft Auto VI (PC)",
-            "short_name": "GTA VI · PC",
-            "tagline": "PC launch tracker (placeholder entry: nothing here is verified yet)",
+            "name": "Grand Theft Auto VI",
+            "short_name": "GTA VI",
+            "tagline": "Release status by platform, patches and updates (PC first). Placeholder until sourced content is loaded.",
             "platform": "pc",
             "is_placeholder": True,
             "vanity_path": ANCHOR,
@@ -81,6 +81,20 @@ def seed_anchor() -> Game:
     return game
 
 
+def _demo_patch_details(game: Game, patch: Patch) -> None:
+    """Highlights, size and two independent sources so the patch detail page is fully populated."""
+    patch.highlights = [
+        "DEMO: sample fix one",
+        "DEMO: sample fix two",
+        "DEMO: sample performance note",
+    ]
+    patch.size_note = "DEMO 1.2 GB"
+    patch.save(update_fields=["highlights", "size_note"])
+    content.add_evidence(game, SubjectKind.PATCH, patch.pk, "https://example.com/demo-patch")
+    content.add_evidence(game, SubjectKind.PATCH, patch.pk, "https://example.org/demo-patch")
+    content.recompute_verification(SubjectKind.PATCH, patch.pk)
+
+
 def seed_demo() -> Game:
     now = timezone.now()
     game, _ = Game.objects.update_or_create(
@@ -98,9 +112,10 @@ def seed_demo() -> Game:
     if not Release.objects.filter(game=game, platform="ps5", is_current=True).exists():
         Release.objects.create(game=game, platform="ps5", date=(now + timedelta(days=120)).date(), confidence=Verification.CONFIRMED,
                                source_url="https://example.com/demo-ps5", source_count=2, note="DEMO data")  # fmt: skip
-    Patch.objects.get_or_create(game=game, platform="ps5", version="0.9.1", defaults={
+    ps5_patch, _ = Patch.objects.get_or_create(game=game, platform="ps5", version="0.9.1", defaults={
         "date": (now - timedelta(days=6)).date(), "notes_url": "https://example.com/demo-ps5-patch",
         "our_summary": "DEMO: sample PS5 patch 0.9.1.", "verification": Verification.REPORTED, "source_count": 1})  # fmt: skip
+    _demo_patch_details(game, ps5_patch)
     Requirement.objects.update_or_create(game=game, platform="pc", tier="min", defaults={
         "os": "Windows 10 64-bit", "cpu": "Intel Core i5-8400 / AMD Ryzen 5 1600", "gpu": "NVIDIA GTX 1060 6GB / AMD RX 580 8GB",
         "ram_gb": 8, "storage_gb": 60, "cpu_ref": "intel-i5-8400", "gpu_ref": "nvidia-gtx-1060-6gb", "notes": "DEMO data",
@@ -113,6 +128,7 @@ def seed_demo() -> Game:
         p, created = Patch.objects.get_or_create(game=game, platform="pc", version=ver, defaults={
             "date": (now - timedelta(days=days)).date(), "notes_url": "https://example.com/demo-patch",
             "our_summary": f"DEMO: sample patch {ver} fixing placeholder issues.", "verification": Verification.CONFIRMED, "source_count": 2})  # fmt: skip
+        _demo_patch_details(game, p)
         if created:
             content.record_change(game, Change.Kind.PATCH, f"Patch {ver}", detail=p.our_summary, version_label=ver, source_url=p.notes_url,
                                   verification=Verification.CONFIRMED, subject_kind=SubjectKind.PATCH, subject_id=p.pk,

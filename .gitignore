@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+node_modules/
+.next/
+storybook-static/
+playwright-report/
+test-results/
+.env
+backups/
+*.log
+staticfiles/
+.DS_Store

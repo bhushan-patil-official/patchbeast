@@ -1,0 +1,83 @@
+# Dev overlay: hot reload, bind mounts, mailpit, adminer (profile "tools").
+x-dev-api: &dev-api
+  volumes:
+    - ./apps/api:/app
+    - ./packages/api-client:/repo/packages/api-client
+  environment:
+    DJANGO_SETTINGS_MODULE: patchbeast.settings.dev
+    PYTHONDONTWRITEBYTECODE: "1"
+
+services:
+  postgres:
+    ports: ["5432:5432"]
+  redis:
+    ports: ["6379:6379"]
+  api:
+    <<: *dev-api
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: dev
+    command: ["python", "manage.py", "runserver", "0.0.0.0:8000"]
+    ports: ["8000:8000"]
+    environment:
+      DJANGO_SETTINGS_MODULE: patchbeast.settings.dev
+      RUN_MIGRATIONS: "1"
+    depends_on:
+      mailpit: { condition: service_healthy }
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+  worker:
+    <<: *dev-api
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: dev
+    command: ["watchmedo", "auto-restart", "--directory=/app", "--pattern=*.py", "--recursive", "--", "celery", "-A", "patchbeast", "worker", "-Q", "ingest,llm,publish,mail,celery", "-l", "info", "--concurrency", "2"]
+  beat:
+    <<: *dev-api
+    build:
+      context: .
+      dockerfile: infra/docker/api.Dockerfile
+      target: dev
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+      target: dev
+      args: {}
+    command: ["npm", "run", "dev", "-w", "apps/web"]
+    ports: ["3000:3000"]
+    environment:
+      API_INTERNAL_URL: http://api:8000
+      NEXT_PUBLIC_API_BASE_URL: http://localhost:8000
+      WATCHPACK_POLLING: "true"
+    volumes:
+      - ./apps/web:/repo/apps/web
+      - ./packages:/repo/packages
+      - web_node_modules:/repo/node_modules
+      - web_next:/repo/apps/web/.next
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/internal/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 60s
+  mailpit:
+    image: axllent/mailpit:v1.20
+    ports: ["8025:8025", "1025:1025"]
+    healthcheck:
+      test: ["CMD", "/mailpit", "readyz"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+  adminer:
+    image: adminer:4.8.1
+    profiles: ["tools"]
+    ports: ["8080:8080"]
+    depends_on:
+      postgres: { condition: service_healthy }
+
+volumes:
+  web_node_modules:
+  web_next:

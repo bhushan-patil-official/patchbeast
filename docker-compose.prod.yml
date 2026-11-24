@@ -1,0 +1,72 @@
+# Prod overlay: restart policies, resource limits, no bind mounts, Caddy TLS, nightly backups.
+services:
+  postgres:
+    restart: unless-stopped
+    deploy: { resources: { limits: { memory: 512M } } }
+  redis:
+    restart: unless-stopped
+    deploy: { resources: { limits: { memory: 192M } } }
+  api:
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: patchbeast.settings.prod
+      RUN_MIGRATIONS: "1"
+    deploy: { resources: { limits: { memory: 512M } } }
+  worker:
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: patchbeast.settings.prod
+    deploy: { resources: { limits: { memory: 512M } } }
+  beat:
+    restart: unless-stopped
+    environment:
+      DJANGO_SETTINGS_MODULE: patchbeast.settings.prod
+    deploy: { resources: { limits: { memory: 128M } } }
+  web:
+    restart: unless-stopped
+    deploy: { resources: { limits: { memory: 384M } } }
+  caddy:
+    image: caddy:2.8-alpine
+    restart: unless-stopped
+    ports: ["80:80", "443:443", "443:443/udp"]
+    environment:
+      DOMAIN: ${DOMAIN}
+      ACME_EMAIL: ${ACME_EMAIL}
+    volumes:
+      - ./infra/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      web: { condition: service_healthy }
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:2019/config/"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+    deploy: { resources: { limits: { memory: 128M } } }
+  backup:
+    image: postgres:16.4-alpine
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      PGHOST: postgres
+      PGUSER: ${POSTGRES_USER:-patchbeast}
+      PGPASSWORD: ${POSTGRES_PASSWORD:-patchbeast}
+      PGDATABASE: ${POSTGRES_DB:-patchbeast}
+    volumes:
+      - ./infra/scripts:/scripts:ro
+      - ./backups:/backups
+    entrypoint: ["/bin/sh", "/scripts/backup-loop.sh"]
+    depends_on:
+      postgres: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "test -n \"$$(find /backups -name '*.sql.gz' -mtime -2 | head -1)\" || test ! -f /tmp/started_ok || exit 1"]
+      interval: 1h
+      timeout: 10s
+      retries: 3
+    deploy: { resources: { limits: { memory: 128M } } }
+
+volumes:
+  caddy_data:
+  caddy_config:

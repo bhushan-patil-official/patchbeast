@@ -1,0 +1,23 @@
+# DECISIONS and assumptions
+
+Autonomous build decisions. Each is cheap to reverse; see `docs/adr/` for the structural ones.
+
+1. **Versions**: Django 5.2 LTS, Python 3.12 (containers), Postgres 16, Redis 7, Node 22, Next.js 15 (App Router), Tailwind 3.4 (simple preset sharing with the design system), Celery 5.
+2. **Brand**: Patchbeast. No "GTA/Rockstar/Vice City" in brand, domain, logo or site name. The launch anchor is described as "Grand Theft Auto VI on PC" in page *content* only (descriptive use). Its URL slug (`gta-6-pc`) is data, not brand; it can be changed in admin.
+3. **No invented facts**: seed data has `date = null`, confidence *Rumour*, requirement rows with empty specs, and sources with placeholder URLs, all `is_placeholder=True`, disabled, and rendered `noindex`. Real feeds must be entered by the owner (RUNBOOK: "Add a source").
+4. **Verification**: Confirmed = >= 2 independent registrable domains or a video; Reported = 1 source; Rumour = 0 / unsure. Computed by `content.services.verification`, recomputed when Evidence changes. An official source gets *no* special elevation (kept literal to the brief); editors can add Evidence in admin.
+5. **Auto-publish** only facts (release date, patch, requirement) with source URL, LLM confidence >= `AUTO_PUBLISH_THRESHOLD` (0.85) and computed verification >= Reported. Everything else -> review. News articles are *never* auto-published.
+6. **LLM**: `claude-haiku-5-5` via env `LLM_MODEL`; prices are env-configurable for the cap (defaults $0.10/$0.50 per MTok). No sampling params are sent (Haiku 5.5 rejects non-default values); `effort=low`; JSON is requested in the prompt and validated with pydantic (not provider-specific structured output) so the port stays provider-agnostic. Without `ANTHROPIC_API_KEY` items skip to the review queue.
+7. **Cost accounting** uses `usage` from the response; before each call we reserve an estimated worst-case cost so concurrent workers cannot overshoot the cap by much.
+8. **Dedupe**: canonical URL (strip tracking params, fragments, `www.`, trailing slash, lowercase host, sort query) then 64-bit simhash over title+lead tokens, hamming distance <= 3 against the last 30 days of the same game.
+9. **Polling**: one beat task per minute dispatches due sources (`next_fetch_at`), per-source interval 5-15 min, exponential backoff up to 6 h, auto-disable after 7 days of continuous failure + alert.
+10. **YouTube**: only `playlistItems` (1 unit) on the channel's uploads playlist; `search` (100 units) is never called. A local quota ledger in Redis stops calls at `YOUTUBE_DAILY_QUOTA - margin`. WebSub receiver is supported for push (needs public callback).
+11. **Robots/ToS**: for `rss`/`api` sources `robots.txt` is checked (cached 24 h) unless the Source is flagged `official_feed` (a feed intended for machine consumption).
+12. **Revalidation** is tag-based + path-based; fires after commit, retried with backoff; failure only alerts, it never blocks publishing.
+13. **Hardware checker**: client-side, using a small *editorial tier catalogue* (approximate relative tiers, not benchmarks, clearly caveated). Requirement rows optionally reference catalogue ids (`cpu_ref`, `gpu_ref`); without refs the checker says it cannot compare automatically.
+14. **Newsletter**: double opt-in with signed single-use tokens, honeypot + throttle, unsubscribe link and `List-Unsubscribe` header, weekly digest idempotent per ISO week.
+15. **Monetisation**: AdSlot/HardwareCard exist but render nothing unless the feature flag is on *and* configured; affiliate disclosure always shown with HardwareCard.
+16. **Analytics**: Plausible script only when `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set; no cookies.
+17. **Admin**: Django admin at `/admin/`; review queue at `/admin/review/`. Put it behind a strong password + 2FA at the proxy if you have a static IP (RUNBOOK).
+18. **Local verification limits**: the build sandbox had no Docker daemon, so compose files are validated statically (`docker compose config` where possible) and the app is smoke-tested natively against local Postgres/Redis. See README "Known gaps".
+19. **Vercel**: optional. `vercel.json` builds only the web app from the monorepo; the API remains on the VPS (ADR 0007).

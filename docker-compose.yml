@@ -1,0 +1,101 @@
+# Base compose. Use with docker-compose.dev.yml (make dev) or docker-compose.prod.yml (make prod-up).
+x-api: &api
+  build:
+    context: .
+    dockerfile: infra/docker/api.Dockerfile
+    target: runtime
+  env_file: .env
+  environment:
+    DJANGO_SETTINGS_MODULE: patchbeast.settings.${DJANGO_ENV:-dev}
+  depends_on:
+    postgres: { condition: service_healthy }
+    redis: { condition: service_healthy }
+
+services:
+  postgres:
+    image: postgres:16.4-alpine
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-patchbeast}
+      POSTGRES_USER: ${POSTGRES_USER:-patchbeast}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-patchbeast}
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7.4-alpine
+    command: ["redis-server", "--appendonly", "yes", "--maxmemory", "128mb", "--maxmemory-policy", "noeviction"]
+    volumes: [redisdata:/data]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    <<: *api
+    command: ["gunicorn", "patchbeast.wsgi:application", "-b", "0.0.0.0:8000", "-w", "2", "--timeout", "30", "--access-logfile", "-"]
+    environment:
+      DJANGO_SETTINGS_MODULE: patchbeast.settings.${DJANGO_ENV:-dev}
+      RUN_MIGRATIONS: "1"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/healthz', timeout=4).status==200 else 1)"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 20s
+
+  worker:
+    <<: *api
+    command: ["celery", "-A", "patchbeast", "worker", "-Q", "ingest,llm,publish,mail,celery", "-l", "info", "--concurrency", "2", "--max-tasks-per-child", "200"]
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A patchbeast inspect ping -d celery@$$HOSTNAME --timeout 5 | grep -q pong"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+  beat:
+    <<: *api
+    command: ["celery", "-A", "patchbeast", "beat", "-l", "info", "--pidfile=/tmp/beat.pid", "-s", "/tmp/celerybeat-schedule"]
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "kill -0 $$(cat /tmp/beat.pid)"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+      target: runtime
+      args:
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL:-}
+        NEXT_PUBLIC_SITE_URL: ${NEXT_PUBLIC_SITE_URL:-http://localhost:3000}
+        NEXT_PUBLIC_PLAUSIBLE_DOMAIN: ${NEXT_PUBLIC_PLAUSIBLE_DOMAIN:-}
+        NEXT_PUBLIC_PLAUSIBLE_SRC: ${NEXT_PUBLIC_PLAUSIBLE_SRC:-}
+        NEXT_PUBLIC_GSC_VERIFICATION: ${NEXT_PUBLIC_GSC_VERIFICATION:-}
+        NEXT_PUBLIC_ADSENSE_CLIENT: ${NEXT_PUBLIC_ADSENSE_CLIENT:-}
+    env_file: .env
+    environment:
+      API_INTERNAL_URL: http://api:8000
+    depends_on:
+      api: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/internal/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 15s
+
+volumes:
+  pgdata:
+  redisdata:

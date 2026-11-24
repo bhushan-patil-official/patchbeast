@@ -119,7 +119,7 @@ def send_digest_to(
         sub.email, f"Patchbeast weekly digest · {week}",
         f"{text}\nUnsubscribe: {unsub}\n",
         f'{html}<hr><p style="font-size:12px"><a href="{escape(unsub)}">Unsubscribe</a> · Patchbeast is a tracker; every item links to its source.</p>',
-        headers={"List-Unsubscribe": f"<{unsub}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"},
+        headers={"List-Unsubscribe": f"<{settings.SITE_URL}/api/v1/newsletter/unsubscribe/?token={sub.unsub_token}>", "List-Unsubscribe-Post": "List-Unsubscribe=One-Click"},
     )  # fmt: skip
     sub.last_digest_week = week
     sub.save(update_fields=["last_digest_week", "updated_at"])

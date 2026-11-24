@@ -9,7 +9,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = env.django_secret_key
 DEBUG = False
-ALLOWED_HOSTS = env.csv(env.django_allowed_hosts)
+# localhost/127.0.0.1 are always allowed so the container healthcheck works whatever the env says
+ALLOWED_HOSTS = sorted({*env.csv(env.django_allowed_hosts), "localhost", "127.0.0.1"})
 CSRF_TRUSTED_ORIGINS = env.csv(env.django_csrf_trusted_origins)
 SITE_URL = env.site_url.rstrip("/")
 

@@ -5,6 +5,12 @@ from modules.common.choices import Verification
 from modules.content import selectors
 from modules.content.models import Article, Change, Patch, Requirement, Video
 from modules.games.models import Game, Release
+from modules.games.selectors import current_releases, hub_path
+
+
+class PlatformSerializer(serializers.Serializer):
+    id = serializers.CharField()
+    name = serializers.CharField()
 
 
 class SeoSerializer(serializers.Serializer):
@@ -30,6 +36,7 @@ class ReleaseSerializer(serializers.ModelSerializer):
             "created_at",
             "countdown_mode",
         ]
+        read_only_fields = fields
 
     @extend_schema_field(serializers.ChoiceField(choices=["live", "unconfirmed"]))
     def get_countdown_mode(self, r: Release) -> str:
@@ -57,23 +64,29 @@ class ChangeSerializer(serializers.ModelSerializer):
             "verification",
             "occurred_at",
         ]
+        read_only_fields = fields
 
 
 class PatchSerializer(serializers.ModelSerializer):
     verification = serializers.ChoiceField(choices=Verification.choices)
+    highlights = serializers.ListField(child=serializers.CharField())
 
     class Meta:
         model = Patch
         fields = [
             "id",
+            "platform",
             "version",
             "date",
             "notes_url",
             "our_summary",
+            "highlights",
+            "size_note",
             "verification",
             "source_count",
             "is_placeholder",
         ]
+        read_only_fields = fields
 
 
 class RequirementSerializer(serializers.ModelSerializer):
@@ -110,6 +123,9 @@ class FaqSerializer(serializers.Serializer):
 
 class GameCardSerializer(serializers.ModelSerializer):
     release = serializers.SerializerMethodField()
+    releases = serializers.SerializerMethodField()
+    platforms = serializers.SerializerMethodField()
+    path = serializers.SerializerMethodField()
     latest_changes = serializers.SerializerMethodField()
     seo = serializers.SerializerMethodField()
 
@@ -117,21 +133,37 @@ class GameCardSerializer(serializers.ModelSerializer):
         model = Game
         fields = [
             "slug",
+            "vanity_path",
+            "path",
             "name",
             "short_name",
             "tagline",
             "platform",
+            "platforms",
             "is_placeholder",
             "release",
+            "releases",
             "latest_changes",
             "seo",
         ]
+        read_only_fields = fields
+
+    @extend_schema_field(serializers.CharField())
+    def get_path(self, g: Game) -> str:
+        """Canonical hub path: the vanity path when set, otherwise /games/<slug>."""
+        return hub_path(g)
+
+    @extend_schema_field(PlatformSerializer(many=True))
+    def get_platforms(self, g: Game):
+        return selectors.platform_options(g)
+
+    @extend_schema_field(ReleaseSerializer(many=True))
+    def get_releases(self, g: Game):
+        return ReleaseSerializer(current_releases(g), many=True).data
 
     @extend_schema_field(ReleaseSerializer(allow_null=True))
     def get_release(self, g: Game):
-        from modules.games.selectors import current_release
-
-        r = current_release(g)
+        r = next((x for x in current_releases(g) if x.platform == g.platforms[0]), None)
         return ReleaseSerializer(r).data if r else None
 
     @extend_schema_field(ChangeSerializer(many=True))
@@ -148,6 +180,10 @@ class GameCardSerializer(serializers.ModelSerializer):
 class HubSerializer(serializers.Serializer):
     game = GameCardSerializer()
     release = ReleaseSerializer(allow_null=True)
+    releases = ReleaseSerializer(many=True)
+    platforms = PlatformSerializer(many=True)
+    seo_title = serializers.CharField(allow_blank=True)
+    seo_description = serializers.CharField(allow_blank=True)
     release_history = ReleaseSerializer(many=True)
     requirements = RequirementSerializer(many=True)
     patches = PatchSerializer(many=True)
@@ -166,8 +202,23 @@ class SubpageSerializer(serializers.Serializer):
     seo = SeoSerializer()
 
 
+class SourceRefSerializer(serializers.Serializer):
+    url = serializers.URLField()
+    domain = serializers.CharField()
+    kind = serializers.CharField()
+
+
+class PatchDetailSerializer(SubpageSerializer):
+    patch = PatchSerializer()
+    sources = SourceRefSerializer(many=True)
+    siblings = PatchSerializer(many=True)
+    changes = ChangeSerializer(many=True)
+
+
 class PatchesPageSerializer(SubpageSerializer):
     items = PatchSerializer(many=True)
+    platforms = PlatformSerializer(many=True)
+    selected_platform = serializers.CharField(allow_blank=True)
 
 
 class VideosPageSerializer(SubpageSerializer):

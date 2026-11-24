@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Card, Countdown, SignalMeter, SourceChip, type ChangeEntry, type SpecTier } from "@patchbeast/design-system";
 import type { Schemas } from "@/lib/api";
+import { platformShort } from "@/lib/platforms";
+import { PlatformReleases } from "./PlatformReleases";
 
 export const toEntry = (c: Schemas["Change"]): ChangeEntry => ({
   id: c.id,
@@ -14,22 +16,26 @@ export const toEntry = (c: Schemas["Change"]): ChangeEntry => ({
 
 export function GameLaunchCard({ g }: { g: Schemas["GameCard"] }) {
   const r = g.release;
+  const multi = g.platforms.length > 1;
   return (
-    <Card className="flex flex-col p-5 transition-shadow hover:shadow-glow">
+    <Card className="group relative flex flex-col p-5 transition-shadow hover:shadow-glow" data-testid="launch-card">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-text">PC launch</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.18em] text-accent-text">{multi ? "Launch · PC first" : "PC launch"}</p>
           <h3 className="font-display text-xl font-semibold">
-            <Link href={`/games/${g.slug}`} className="pb-focus rounded hover:text-accent-text">{g.name}</Link>
+            {/* stretched link: the whole card is clickable; inner links sit above it (z-10) */}
+            <Link href={g.path} className="pb-focus rounded after:absolute after:inset-0 after:content-[''] group-hover:text-accent-text">{g.name}</Link>
           </h3>
           {g.tagline && <p className="mt-1 text-sm text-fg-muted">{g.tagline}</p>}
         </div>
         {r && <SignalMeter level={r.confidence} sources={r.source_count} size="sm" />}
       </div>
       <div className="my-6">
+        {multi && r && <p className="mb-2 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-fg-muted">{platformShort(r.platform)} release</p>}
         <Countdown target={r?.date ?? null} mode={r?.countdown_mode ?? "unconfirmed"} />
-        {r?.source_url && <div className="mt-3 flex justify-center"><SourceChip url={r.source_url} /></div>}
+        {r?.source_url && <div className="relative z-10 mt-3 flex justify-center"><SourceChip url={r.source_url} /></div>}
       </div>
+      {multi && <div className="mb-4"><PlatformReleases releases={g.releases} platforms={g.platforms} compact /></div>}
       <div className="mt-auto border-t border-line pt-3">
         <h4 className="font-mono text-[11px] uppercase tracking-[0.18em] text-fg-muted">Latest confirmed changes</h4>
         {g.latest_changes.length ? (
@@ -41,6 +47,7 @@ export function GameLaunchCard({ g }: { g: Schemas["GameCard"] }) {
         ) : (
           <p className="mt-2 text-sm text-fg-muted">Nothing confirmed yet. We only list changes with sources.</p>
         )}
+        <p className="mt-4 text-sm font-medium text-accent-text">View tracker <span aria-hidden="true">→</span></p>
       </div>
     </Card>
   );

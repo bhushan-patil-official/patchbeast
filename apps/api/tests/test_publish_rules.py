@@ -67,7 +67,10 @@ def test_same_domain_twice_is_not_independent(game):
         (cls(DATE, confidence=0.5), "below threshold"),
         (cls(DATE, topic="rumour"), "rumour"),
         (cls(None), "no structured fact"),
-        (cls(Fact(kind="release_date", platform="ps5", release_date=date(2027, 3, 1))), "not PC"),
+        (
+            cls(Fact(kind="release_date", platform="ps5", release_date=date(2027, 3, 1))),
+            "not tracked",
+        ),
     ],
 )
 def test_not_auto_published(game, c, reason):

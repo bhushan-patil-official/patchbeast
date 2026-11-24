@@ -48,6 +48,16 @@ export function Countdown({ target, mode, className }: CountdownProps) {
   const units: [string, string][] = b
     ? [[pad(b.d), "days"], [pad(b.h), "hrs"], [pad(b.m), "min"], [pad(b.s), "sec"]]
     : [["--", "days"], ["--", "hrs"], ["--", "min"], ["--", "sec"]];
+  if (released) {
+    return (
+      <div className={cn("text-center", className)} data-testid="countdown" data-mode="released">
+        <p className="font-mono text-3xl font-semibold tracking-tight text-signal-confirmed sm:text-5xl">Released</p>
+        <time dateTime={target!} className="mt-2 block font-mono text-sm uppercase tracking-[0.2em] text-fg-muted">
+          {new Intl.DateTimeFormat("en", { year: "numeric", month: "short", day: "2-digit", timeZone: "UTC" }).format(toDate(target!))}
+        </time>
+      </div>
+    );
+  }
   const sr = b
     ? released
       ? "Release date has passed."

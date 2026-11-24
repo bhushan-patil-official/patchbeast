@@ -140,7 +140,8 @@ EMAIL_HOST = env.email_host
 EMAIL_PORT = env.email_port
 EMAIL_HOST_USER = env.email_host_user
 EMAIL_HOST_PASSWORD = env.email_host_password
-EMAIL_USE_TLS = env.email_use_tls
+EMAIL_USE_TLS = env.email_use_tls  # STARTTLS (port 587)
+EMAIL_USE_SSL = env.email_use_ssl  # implicit TLS (port 465); mutually exclusive with TLS
 DEFAULT_FROM_EMAIL = env.default_from_email
 EMAIL_TIMEOUT = 10
 

@@ -32,14 +32,35 @@ export const api = {
   games: () => call(() => client(["games"]).GET("/api/v1/games/")),
   hub: (slug: string) =>
     call(() => client([`game:${slug}`]).GET("/api/v1/games/{slug}/", { params: { path: { slug } } })),
-  patches: (slug: string) =>
-    call(() => client([`game:${slug}`]).GET("/api/v1/games/{slug}/patches/", { params: { path: { slug } } })),
+  patches: (slug: string, platform?: string) =>
+    call(() =>
+      client([`game:${slug}`]).GET("/api/v1/games/{slug}/patches/", {
+        params: { path: { slug }, query: platform ? { platform } : {} },
+      }),
+    ),
   videos: (slug: string) =>
     call(() => client([`game:${slug}`, "videos"]).GET("/api/v1/games/{slug}/videos/", { params: { path: { slug } } })),
   requirements: (slug: string) =>
     call(() => client([`game:${slug}`]).GET("/api/v1/games/{slug}/requirements/", { params: { path: { slug } } })),
   ticker: () => call(() => client(["ticker"]).GET("/api/v1/ticker/")),
-  news: (page = 1) => call(() => client(["news"]).GET("/api/v1/news/", { params: { query: { page } } })),
+  news: (page = 1, game?: string) =>
+    call(() =>
+      client(game ? ["news", `game:${game}`] : ["news"]).GET("/api/v1/news/", {
+        params: { query: game ? { page, game } : { page } },
+      }),
+    ),
+  patch: (slug: string, platform: string, version: string) =>
+    call(() =>
+      client([`game:${slug}`]).GET("/api/v1/games/{slug}/patches/{platform}/{version}/", {
+        params: { path: { slug, platform, version } },
+      }),
+    ),
+  changes: (slug: string, page = 1) =>
+    call(() =>
+      client([`game:${slug}`]).GET("/api/v1/games/{slug}/changes/", {
+        params: { path: { slug }, query: { page } },
+      }),
+    ),
   feed: (page = 1) => call(() => client(["feed"]).GET("/api/v1/feed/", { params: { query: { page } } })),
   sitemap: () => call(() => client(["sitemap"]).GET("/api/v1/sitemap/")),
   config: () => call(() => client(["config"]).GET("/api/v1/config/")),

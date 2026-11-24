@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Section, SpecCompare } from "@patchbeast/design-system";
 import { RequirementsChecker } from "@/components/RequirementsChecker";
 import { PlaceholderNotice, toTier } from "@/components/Cards";
+import { Breadcrumbs, GameNav } from "@/components/GameNav";
 import { HardwareBlock } from "@/components/Monetization";
 import { api } from "@/lib/api";
 import { pageMetadata } from "@/lib/seo";
@@ -40,7 +41,9 @@ export default async function RequirementsPage({ params }: Props) {
   return (
     <>
       <PlaceholderNotice show={!seo.indexable} />
+      <Breadcrumbs crumbs={[{ name: "Launches", href: "/" }, { name: game.name, href: game.path }, { name: "PC requirements" }]} />
       <h1 className="font-display text-3xl font-bold tracking-tight">{game.name}: PC requirements</h1>
+      <GameNav game={game} current="requirements" />
       <Section title="Minimum vs recommended" id="specs"><SpecCompare min={toTier(min)} rec={toTier(rec)} /></Section>
       <Section eyebrow="Client-side tool" title="Can my PC run it?" id="checker">
         <RequirementsChecker min={min} rec={rec} />

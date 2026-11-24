@@ -19,6 +19,7 @@ class Subscriber(AuditModel):
     confirmation_sent_at = models.DateTimeField(null=True, blank=True)
     signup_source = models.CharField(max_length=60, blank=True)
     last_digest_week = models.CharField(max_length=10, blank=True)
+    games = models.JSONField(default=list, blank=True, help_text="game slugs; empty = all games")
 
     def __str__(self) -> str:
         return self.email

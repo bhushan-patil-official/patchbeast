@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { pageMetadata } from "@/lib/seo";
 import { CONTACT_EMAIL } from "@/lib/site";
 
@@ -16,7 +17,7 @@ export default function Page() {
       <h2>Server logs</h2>
       <p>Our servers keep short-lived technical logs (IP address, request path, status) for security and debugging, and delete them on a rolling basis.</p>
       <h2>Third parties</h2>
-      <p>Videos load from YouTube (privacy-enhanced mode) only after you press play. If advertising or affiliate links are enabled, those partners may set their own cookies; we will say so here and on the <a href="/affiliate-disclosure">affiliate disclosure</a> page.</p>
+      <p>Videos load from YouTube (privacy-enhanced mode) only after you press play. If advertising or affiliate links are enabled, those partners may set their own cookies; we will say so here and on the <Link href="/affiliate-disclosure">affiliate disclosure</Link> page.</p>
       <h2>Contact</h2>
       <p>Questions or deletion requests: <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</p>
     </article>

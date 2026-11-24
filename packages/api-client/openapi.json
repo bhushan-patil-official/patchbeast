@@ -132,10 +132,69 @@
                 }
             }
         },
+        "/api/v1/games/{slug}/changes/": {
+            "get": {
+                "operationId": "v1_games_changes_list",
+                "description": "Full change log (timeline) for one game, newest first, paginated.",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedChangeList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/games/{slug}/patches/": {
             "get": {
                 "operationId": "v1_games_patches_retrieve",
                 "parameters": [
+                    {
+                        "in": "query",
+                        "name": "platform",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     {
                         "in": "path",
                         "name": "slug",
@@ -157,6 +216,55 @@
                             "application/json": {
                                 "schema": {
                                     "$ref": "#/components/schemas/PatchesPage"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/games/{slug}/patches/{platform}/{version}/": {
+            "get": {
+                "operationId": "v1_games_patches_retrieve_2",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "platform",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    },
+                    {
+                        "in": "path",
+                        "name": "version",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PatchDetail"
                                 }
                             }
                         },
@@ -590,50 +698,51 @@
                         "type": "string"
                     },
                     "kind": {
-                        "$ref": "#/components/schemas/ChangeKindEnum"
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/ChangeKindEnum"
+                            }
+                        ],
+                        "readOnly": true
                     },
                     "title": {
                         "type": "string",
-                        "maxLength": 240
+                        "readOnly": true
                     },
                     "detail": {
                         "type": "string",
-                        "description": "what changed, e.g. 'Date: unknown -> 2027-03-01'",
-                        "maxLength": 500
+                        "readOnly": true,
+                        "description": "what changed, e.g. 'Date: unknown -> 2027-03-01'"
                     },
                     "version_label": {
                         "type": "string",
-                        "maxLength": 60
+                        "readOnly": true
                     },
                     "source_url": {
-                        "oneOf": [
-                            {
-                                "type": "string",
-                                "format": "uri",
-                                "maxLength": 1000
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0
-                            }
-                        ]
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true
                     },
                     "verification": {
                         "$ref": "#/components/schemas/VerificationEnum"
                     },
                     "occurred_at": {
                         "type": "string",
-                        "format": "date-time"
+                        "format": "date-time",
+                        "readOnly": true
                     }
                 },
                 "required": [
+                    "detail",
                     "game_name",
                     "game_slug",
                     "id",
                     "kind",
                     "occurred_at",
+                    "source_url",
                     "title",
-                    "verification"
+                    "verification",
+                    "version_label"
                 ]
             },
             "ChangeKindEnum": {
@@ -675,27 +784,46 @@
                 "properties": {
                     "slug": {
                         "type": "string",
-                        "maxLength": 50,
+                        "readOnly": true,
                         "pattern": "^[-a-zA-Z0-9_]+$"
+                    },
+                    "vanity_path": {
+                        "type": "string",
+                        "readOnly": true,
+                        "nullable": true,
+                        "description": "Optional short URL for a flagship page, e.g. 'gta-6-pc' -> /gta-6-pc (the /games/<slug> URL then redirects).",
+                        "pattern": "^[-a-zA-Z0-9_]+$"
+                    },
+                    "path": {
+                        "type": "string",
+                        "readOnly": true
                     },
                     "name": {
                         "type": "string",
-                        "maxLength": 200
+                        "readOnly": true
                     },
                     "short_name": {
                         "type": "string",
-                        "maxLength": 80
+                        "readOnly": true
                     },
                     "tagline": {
                         "type": "string",
-                        "maxLength": 240
+                        "readOnly": true
                     },
                     "platform": {
                         "type": "string",
-                        "maxLength": 20
+                        "readOnly": true
+                    },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Platform"
+                        },
+                        "readOnly": true
                     },
                     "is_placeholder": {
                         "type": "boolean",
+                        "readOnly": true,
                         "description": "Seeded placeholder: page stays noindex until real content exists."
                     },
                     "release": {
@@ -705,6 +833,13 @@
                             }
                         ],
                         "nullable": true,
+                        "readOnly": true
+                    },
+                    "releases": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Release"
+                        },
                         "readOnly": true
                     },
                     "latest_changes": {
@@ -724,11 +859,19 @@
                     }
                 },
                 "required": [
+                    "is_placeholder",
                     "latest_changes",
                     "name",
+                    "path",
+                    "platform",
+                    "platforms",
                     "release",
+                    "releases",
                     "seo",
-                    "slug"
+                    "short_name",
+                    "slug",
+                    "tagline",
+                    "vanity_path"
                 ]
             },
             "Hub": {
@@ -744,6 +887,24 @@
                             }
                         ],
                         "nullable": true
+                    },
+                    "releases": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Release"
+                        }
+                    },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Platform"
+                        }
+                    },
+                    "seo_title": {
+                        "type": "string"
+                    },
+                    "seo_description": {
+                        "type": "string"
                     },
                     "release_history": {
                         "type": "array",
@@ -814,11 +975,15 @@
                     "game",
                     "news",
                     "patches",
+                    "platforms",
                     "release",
                     "release_history",
+                    "releases",
                     "requirements",
                     "sections",
                     "seo",
+                    "seo_description",
+                    "seo_title",
                     "videos"
                 ]
             },
@@ -864,6 +1029,37 @@
                     }
                 }
             },
+            "PaginatedChangeList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Change"
+                        }
+                    }
+                }
+            },
             "Patch": {
                 "type": "object",
                 "properties": {
@@ -871,47 +1067,104 @@
                         "type": "integer",
                         "readOnly": true
                     },
+                    "platform": {
+                        "type": "string",
+                        "readOnly": true
+                    },
                     "version": {
                         "type": "string",
-                        "maxLength": 60
+                        "readOnly": true
                     },
                     "date": {
                         "type": "string",
                         "format": "date",
+                        "readOnly": true,
                         "nullable": true
                     },
                     "notes_url": {
-                        "oneOf": [
-                            {
-                                "type": "string",
-                                "format": "uri",
-                                "maxLength": 1000
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0
-                            }
-                        ]
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true
                     },
                     "our_summary": {
-                        "type": "string"
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "highlights": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "size_note": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "e.g. '603.7 MB'"
                     },
                     "verification": {
                         "$ref": "#/components/schemas/VerificationEnum"
                     },
                     "source_count": {
                         "type": "integer",
-                        "maximum": 32767,
-                        "minimum": 0
+                        "readOnly": true
                     },
                     "is_placeholder": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "readOnly": true
                     }
                 },
                 "required": [
+                    "date",
+                    "highlights",
                     "id",
+                    "is_placeholder",
+                    "notes_url",
+                    "our_summary",
+                    "platform",
+                    "size_note",
+                    "source_count",
                     "verification",
                     "version"
+                ]
+            },
+            "PatchDetail": {
+                "type": "object",
+                "properties": {
+                    "game": {
+                        "$ref": "#/components/schemas/GameCard"
+                    },
+                    "seo": {
+                        "$ref": "#/components/schemas/Seo"
+                    },
+                    "patch": {
+                        "$ref": "#/components/schemas/Patch"
+                    },
+                    "sources": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/SourceRef"
+                        }
+                    },
+                    "siblings": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Patch"
+                        }
+                    },
+                    "changes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Change"
+                        }
+                    }
+                },
+                "required": [
+                    "changes",
+                    "game",
+                    "patch",
+                    "seo",
+                    "siblings",
+                    "sources"
                 ]
             },
             "PatchesPage": {
@@ -928,12 +1181,38 @@
                         "items": {
                             "$ref": "#/components/schemas/Patch"
                         }
+                    },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Platform"
+                        }
+                    },
+                    "selected_platform": {
+                        "type": "string"
                     }
                 },
                 "required": [
                     "game",
                     "items",
+                    "platforms",
+                    "selected_platform",
                     "seo"
+                ]
+            },
+            "Platform": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
                 ]
             },
             "PublicConfig": {
@@ -968,11 +1247,12 @@
                     },
                     "platform": {
                         "type": "string",
-                        "maxLength": 20
+                        "readOnly": true
                     },
                     "date": {
                         "type": "string",
                         "format": "date",
+                        "readOnly": true,
                         "nullable": true,
                         "description": "Empty = no date known"
                     },
@@ -980,29 +1260,21 @@
                         "$ref": "#/components/schemas/VerificationEnum"
                     },
                     "source_url": {
-                        "oneOf": [
-                            {
-                                "type": "string",
-                                "format": "uri",
-                                "maxLength": 1000
-                            },
-                            {
-                                "type": "string",
-                                "maxLength": 0
-                            }
-                        ]
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true
                     },
                     "source_count": {
                         "type": "integer",
-                        "maximum": 32767,
-                        "minimum": 0
+                        "readOnly": true
                     },
                     "note": {
                         "type": "string",
-                        "maxLength": 240
+                        "readOnly": true
                     },
                     "is_placeholder": {
-                        "type": "boolean"
+                        "type": "boolean",
+                        "readOnly": true
                     },
                     "created_at": {
                         "type": "string",
@@ -1022,7 +1294,13 @@
                     "confidence",
                     "countdown_mode",
                     "created_at",
-                    "id"
+                    "date",
+                    "id",
+                    "is_placeholder",
+                    "note",
+                    "platform",
+                    "source_count",
+                    "source_url"
                 ]
             },
             "Requirement": {
@@ -1171,6 +1449,26 @@
                     "path"
                 ]
             },
+            "SourceRef": {
+                "type": "object",
+                "properties": {
+                    "url": {
+                        "type": "string",
+                        "format": "uri"
+                    },
+                    "domain": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "domain",
+                    "kind",
+                    "url"
+                ]
+            },
             "StatusEnum": {
                 "enum": [
                     "new",
@@ -1189,6 +1487,19 @@
                         "format": "email",
                         "minLength": 1,
                         "maxLength": 254
+                    },
+                    "game": {
+                        "description": "game slug: only that game's changes; empty = all games",
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "pattern": "^[-a-zA-Z0-9_]+$"
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
                     },
                     "website": {
                         "type": "string",

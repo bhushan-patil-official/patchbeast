@@ -69,6 +69,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/games/{slug}/changes/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Full change log (timeline) for one game, newest first, paginated. */
+        get: operations["v1_games_changes_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/games/{slug}/patches/": {
         parameters: {
             query?: never;
@@ -77,6 +94,22 @@ export interface paths {
             cookie?: never;
         };
         get: operations["v1_games_patches_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/games/{slug}/patches/{platform}/{version}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_games_patches_retrieve_2"];
         put?: never;
         post?: never;
         delete?: never;
@@ -244,15 +277,16 @@ export interface components {
             readonly id: number;
             game_slug: string;
             game_name: string;
-            kind: components["schemas"]["ChangeKindEnum"];
-            title: string;
+            readonly kind: components["schemas"]["ChangeKindEnum"];
+            readonly title: string;
             /** @description what changed, e.g. 'Date: unknown -> 2027-03-01' */
-            detail?: string;
-            version_label?: string;
-            source_url?: string;
+            readonly detail: string;
+            readonly version_label: string;
+            /** Format: uri */
+            readonly source_url: string;
             verification: components["schemas"]["VerificationEnum"];
             /** Format: date-time */
-            occurred_at: string;
+            readonly occurred_at: string;
         };
         /**
          * @description * `release` - Release
@@ -274,20 +308,29 @@ export interface components {
             a: string;
         };
         GameCard: {
-            slug: string;
-            name: string;
-            short_name?: string;
-            tagline?: string;
-            platform?: string;
+            readonly slug: string;
+            /** @description Optional short URL for a flagship page, e.g. 'gta-6-pc' -> /gta-6-pc (the /games/<slug> URL then redirects). */
+            readonly vanity_path: string | null;
+            readonly path: string;
+            readonly name: string;
+            readonly short_name: string;
+            readonly tagline: string;
+            readonly platform: string;
+            readonly platforms: components["schemas"]["Platform"][];
             /** @description Seeded placeholder: page stays noindex until real content exists. */
-            is_placeholder?: boolean;
+            readonly is_placeholder: boolean;
             readonly release: components["schemas"]["Release"] | null;
+            readonly releases: components["schemas"]["Release"][];
             readonly latest_changes: components["schemas"]["Change"][];
             readonly seo: components["schemas"]["Seo"];
         };
         Hub: {
             game: components["schemas"]["GameCard"];
             release: components["schemas"]["Release"] | null;
+            releases: components["schemas"]["Release"][];
+            platforms: components["schemas"]["Platform"][];
+            seo_title: string;
+            seo_description: string;
             release_history: components["schemas"]["Release"][];
             requirements: components["schemas"]["Requirement"][];
             patches: components["schemas"]["Patch"][];
@@ -318,21 +361,55 @@ export interface components {
             previous?: string | null;
             results: components["schemas"]["Article"][];
         };
+        PaginatedChangeList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["Change"][];
+        };
         Patch: {
             readonly id: number;
-            version: string;
+            readonly platform: string;
+            readonly version: string;
             /** Format: date */
-            date?: string | null;
-            notes_url?: string;
-            our_summary?: string;
+            readonly date: string | null;
+            /** Format: uri */
+            readonly notes_url: string;
+            readonly our_summary: string;
+            highlights: string[];
+            /** @description e.g. '603.7 MB' */
+            readonly size_note: string;
             verification: components["schemas"]["VerificationEnum"];
-            source_count?: number;
-            is_placeholder?: boolean;
+            readonly source_count: number;
+            readonly is_placeholder: boolean;
+        };
+        PatchDetail: {
+            game: components["schemas"]["GameCard"];
+            seo: components["schemas"]["Seo"];
+            patch: components["schemas"]["Patch"];
+            sources: components["schemas"]["SourceRef"][];
+            siblings: components["schemas"]["Patch"][];
+            changes: components["schemas"]["Change"][];
         };
         PatchesPage: {
             game: components["schemas"]["GameCard"];
             seo: components["schemas"]["Seo"];
             items: components["schemas"]["Patch"][];
+            platforms: components["schemas"]["Platform"][];
+            selected_platform: string;
+        };
+        Platform: {
+            id: string;
+            name: string;
         };
         PublicConfig: {
             flags: {
@@ -344,17 +421,18 @@ export interface components {
         };
         Release: {
             readonly id: number;
-            platform?: string;
+            readonly platform: string;
             /**
              * Format: date
              * @description Empty = no date known
              */
-            date?: string | null;
+            readonly date: string | null;
             confidence: components["schemas"]["VerificationEnum"];
-            source_url?: string;
-            source_count?: number;
-            note?: string;
-            is_placeholder?: boolean;
+            /** Format: uri */
+            readonly source_url: string;
+            readonly source_count: number;
+            readonly note: string;
+            readonly is_placeholder: boolean;
             /** Format: date-time */
             readonly created_at: string;
             readonly countdown_mode: components["schemas"]["CountdownModeEnum"];
@@ -393,6 +471,12 @@ export interface components {
             /** Format: date-time */
             lastmod: string | null;
         };
+        SourceRef: {
+            /** Format: uri */
+            url: string;
+            domain: string;
+            kind: string;
+        };
         /**
          * @description * `new` - New
          *     * `queued` - Queued for review
@@ -404,6 +488,8 @@ export interface components {
         SubscribeRequest: {
             /** Format: email */
             email: string;
+            /** @description game slug: only that game's changes; empty = all games */
+            game?: string;
             /** @description honeypot: must stay empty */
             website?: string;
         };
@@ -537,9 +623,37 @@ export interface operations {
             };
         };
     };
+    v1_games_changes_list: {
+        parameters: {
+            query?: {
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedChangeList"];
+                };
+            };
+        };
+    };
     v1_games_patches_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                platform?: string;
+            };
             header?: never;
             path: {
                 slug: string;
@@ -554,6 +668,29 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PatchesPage"];
+                };
+            };
+        };
+    };
+    v1_games_patches_retrieve_2: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                platform: string;
+                slug: string;
+                version: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PatchDetail"];
                 };
             };
         };

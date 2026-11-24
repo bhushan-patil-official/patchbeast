@@ -31,6 +31,9 @@ def game_hub(request, slug: str):
     cfg = game.hub_config or {}
     data = {
         "game": game, **h,
+        "platforms": selectors.platform_options(game),
+        "seo_title": cfg.get("seo_title", ""),
+        "seo_description": cfg.get("seo_description", ""),
         "faq": cfg.get("faq", []),
         "checker_enabled": bool(cfg.get("checker", True)),
         "affiliate_categories": cfg.get("affiliate_categories", ["gpu", "ssd", "ram"]),
@@ -40,19 +43,28 @@ def game_hub(request, slug: str):
     return Response(s.HubSerializer(data).data)
 
 
-@extend_schema(responses=s.PatchesPageSerializer, tags=["games"])
+@extend_schema(
+    parameters=[OpenApiParameter("platform", str, required=False)],
+    responses=s.PatchesPageSerializer,
+    tags=["games"],
+)
 @api_view(["GET"])
 def game_patches(request, slug: str):
     g = _game_or_404(slug)
-    return Response(
-        s.PatchesPageSerializer(
-            {
-                "game": g,
-                "items": selectors.Patch.objects.filter(game=g),
-                "seo": selectors.seo_subpage(g, "patches"),
-            }
-        ).data
-    )
+    platform = request.query_params.get("platform", "")
+    items = selectors.Patch.objects.filter(game=g)
+    if platform in g.platforms:
+        items = items.filter(platform=platform)
+    else:
+        platform = ""
+    data = {
+        "game": g,
+        "items": items,
+        "platforms": selectors.platform_options(g),
+        "selected_platform": platform,
+        "seo": selectors.seo_subpage(g, "patches"),
+    }
+    return Response(s.PatchesPageSerializer(data).data)
 
 
 @extend_schema(responses=s.VideosPageSerializer, tags=["games"])
@@ -118,3 +130,31 @@ class FeedList(generics.ListAPIView):
 @api_view(["GET"])
 def sitemap(request):
     return Response(s.SitemapEntrySerializer(selectors.sitemap_entries(), many=True).data)
+
+
+@extend_schema(responses=s.PatchDetailSerializer, tags=["games"])
+@api_view(["GET"])
+def patch_detail(request, slug: str, platform: str, version: str):
+    g = _game_or_404(slug)
+    patch = selectors.Patch.objects.filter(game=g, platform=platform, version=version).first()
+    if patch is None:
+        raise NotFound("patch not found")
+    sources = selectors.patch_sources(patch)
+    siblings = selectors.Patch.objects.filter(game=g, version=version).exclude(pk=patch.pk)
+    changes = selectors.public_changes(g).filter(subject_kind="patch", subject_id=patch.pk)
+    data = {
+        "game": g, "patch": patch, "siblings": siblings, "changes": changes[:5],
+        "sources": [{"url": e.url, "domain": e.domain, "kind": e.kind} for e in sources],
+        "seo": selectors.seo_for_patch(g, patch, len(sources)),
+    }  # fmt: skip
+    return Response(s.PatchDetailSerializer(data).data)
+
+
+@extend_schema(tags=["games"])
+class GameChangesList(generics.ListAPIView):
+    """Full change log (timeline) for one game, newest first, paginated."""
+
+    serializer_class = s.ChangeSerializer
+
+    def get_queryset(self):
+        return selectors.public_changes(_game_or_404(self.kwargs["slug"]))

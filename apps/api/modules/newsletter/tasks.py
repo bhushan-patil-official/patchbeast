@@ -22,6 +22,7 @@ def send_weekly_digest() -> int:
 
 @shared_task(
     name="mail.send_digest_to_subscriber",
+    rate_limit="60/m",  # stay well inside email-provider rate limits; retries back off on errors
     base=AlertingTask,
     bind=True,
     max_retries=4,
@@ -30,9 +31,8 @@ def send_weekly_digest() -> int:
 )
 def send_digest_to_subscriber(self, subscriber_id: int, week: str) -> bool:
     sub = Subscriber.objects.get(pk=subscriber_id)
-    text, html, _ = services.build_digest()
     try:
-        ok = services.send_digest_to(sub, week, text, html)
+        ok = services.send_digest_to(sub, week)
     except Exception as e:  # SMTP hiccup -> retry with backoff
         raise self.retry(exc=e, countdown=60 * (2**self.request.retries)) from e
     if ok:

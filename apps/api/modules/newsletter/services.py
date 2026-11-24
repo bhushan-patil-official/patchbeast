@@ -27,14 +27,19 @@ def _links(sub: Subscriber) -> tuple[str, str]:
     )
 
 
-def subscribe(email: str, *, source: str = "", mailer: Mailer | None = None) -> None:
+def subscribe(
+    email: str, *, source: str = "", game: str | None = None, mailer: Mailer | None = None
+) -> None:
     """Always returns silently (no account enumeration). Sends a confirmation mail when needed."""
     if not flag_enabled("newsletter"):
         raise NewsletterDisabled
     email = email.strip().lower()
+    wanted = _valid_game_slug(game)
     sub, created = Subscriber.objects.get_or_create(
-        email=email, defaults={"signup_source": source[:60]}
+        email=email,
+        defaults={"signup_source": source[:60], "games": [wanted] if wanted else []},
     )
+    _apply_game_preference(sub, wanted, created)
     if sub.active:
         return
     if sub.unsubscribed_at and not created:
@@ -56,6 +61,30 @@ def subscribe(email: str, *, source: str = "", mailer: Mailer | None = None) -> 
     )
     sub.confirmation_sent_at = timezone.now()
     sub.save()
+
+
+def _valid_game_slug(slug: str | None) -> str | None:
+    if not slug:
+        return None
+    from modules.games.selectors import get_game
+
+    g = get_game(slug)
+    return g.slug if g else None
+
+
+def _apply_game_preference(sub: Subscriber, wanted: str | None, created: bool) -> None:
+    """Home-page signup = all games; a game page adds that game to an existing narrow list."""
+    if created:
+        return
+    if wanted is None:
+        new: list[str] = []
+    elif sub.games:
+        new = sorted({*sub.games, wanted})
+    else:
+        new = list(sub.games)  # already receives everything
+    if new != list(sub.games):
+        sub.games = new
+        sub.save(update_fields=["games", "updated_at"])
 
 
 def confirm(token: str) -> bool:
@@ -83,8 +112,8 @@ def iso_week(dt=None) -> str:
     return f"{y}-W{w:02d}"
 
 
-def build_digest(since=None) -> tuple[str, str, int]:
-    changes = list(content_selectors.weekly_changes(since))
+def build_digest(since=None, games: list[str] | None = None) -> tuple[str, str, int]:
+    changes = list(content_selectors.weekly_changes(since, games or None))
     lines, html = ["Confirmed changes this week (each links to its source):", ""], [
         "<h2>Confirmed changes this week</h2>"
     ]
@@ -109,10 +138,12 @@ def build_digest(since=None) -> tuple[str, str, int]:
     return "\n".join(lines), "".join(html), len(changes)
 
 
-def send_digest_to(
-    sub: Subscriber, week: str, text: str, html: str, mailer: Mailer | None = None
-) -> bool:
+def send_digest_to(sub: Subscriber, week: str, mailer: Mailer | None = None) -> bool:
+    """Builds this subscriber's digest (their games only). Nothing to report = nothing sent."""
     if not sub.active or sub.last_digest_week == week:
+        return False
+    text, html, count = build_digest(games=list(sub.games))
+    if count == 0:
         return False
     _, unsub = _links(sub)
     (mailer or get_mailer()).send(

@@ -67,10 +67,15 @@ class Article(AuditModel):
 
 class Patch(AuditModel):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="patches")
+    platform = models.CharField(max_length=20, default="pc")
     version = models.CharField(max_length=60)
     date = models.DateField(null=True, blank=True)
     notes_url = models.URLField(max_length=1000, blank=True)
     our_summary = models.TextField(blank=True)
+    highlights = models.JSONField(
+        default=list, blank=True, help_text="Our own short bullets (original wording, max 8)"
+    )
+    size_note = models.CharField(max_length=120, blank=True, help_text="e.g. '603.7 MB'")
     verification = models.CharField(
         max_length=10, choices=Verification.choices, default=Verification.REPORTED
     )
@@ -80,7 +85,9 @@ class Patch(AuditModel):
     class Meta:
         ordering = ["-date", "-created_at"]
         constraints = [
-            models.UniqueConstraint(fields=["game", "version"], name="uniq_patch_version")
+            models.UniqueConstraint(
+                fields=["game", "platform", "version"], name="uniq_patch_version"
+            )
         ]
 
     def __str__(self) -> str:

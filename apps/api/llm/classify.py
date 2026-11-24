@@ -12,6 +12,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field, ValidationError, field_validator, model_validator
 
+from modules.common.platforms import normalise_platform
+
 from .ports import LLMClient, LLMError
 
 TOPICS = ["release_date", "patch", "requirements", "trailer", "news", "rumour", "hardware", "other"]
@@ -29,6 +31,11 @@ class Fact(BaseModel):
     gpu: str | None = Field(default=None, max_length=160)
     ram_gb: int | None = Field(default=None, ge=1, le=512)
     storage_gb: int | None = Field(default=None, ge=1, le=2000)
+
+    @field_validator("platform", mode="before")
+    @classmethod
+    def _platform(cls, v):
+        return normalise_platform(v if isinstance(v, str) else "pc")
 
     @model_validator(mode="after")
     def _complete(self):
@@ -81,11 +88,12 @@ Reply with ONE JSON object and nothing else (no markdown fences), exactly these 
  "tags": up to 6 short lowercase tags,
  "summary": 2-3 short sentences in YOUR OWN words (never copy phrases of 6+ words from the item), neutral tone, no hype, no clickbait, max 400 characters,
  "fact": null OR one of
-   {"kind":"release_date","platform":"pc","release_date":"YYYY-MM-DD"}
-   {"kind":"patch","platform":"pc","patch_version":"...","patch_date":"YYYY-MM-DD or null"}
+   {"kind":"release_date","platform":PLATFORM,"release_date":"YYYY-MM-DD"}
+   {"kind":"patch","platform":PLATFORM,"patch_version":"...","patch_date":"YYYY-MM-DD or null"}
    {"kind":"requirement","platform":"pc","req_tier":"min|rec","os":..,"cpu":..,"gpu":..,"ram_gb":int,"storage_gb":int}
 }
-Only include "fact" when the item states it explicitly as announced (not speculation, leaks or rumours); otherwise null.
+PLATFORM is one of "pc","ps5","xbox_series","switch2","other": the platform the fact is about. If the item does not say which platform, use "other".
+System requirements are PC only. Only include "fact" when the item states it explicitly as announced (not speculation, leaks or rumours); otherwise null.
 Use topic "rumour" for leaks/speculation."""
 
 

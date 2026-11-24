@@ -1,0 +1,1296 @@
+{
+    "openapi": "3.0.3",
+    "info": {
+        "title": "Patchbeast API",
+        "version": "1.0.0",
+        "description": "Read API for the Patchbeast launch tracker. The OpenAPI schema is the contract."
+    },
+    "paths": {
+        "/api/v1/config/": {
+            "get": {
+                "operationId": "v1_config_retrieve",
+                "tags": [
+                    "config"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PublicConfig"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/feed/": {
+            "get": {
+                "operationId": "v1_feed_list",
+                "description": "Raw aggregate (unreviewed items included). The web page is noindex,nofollow.",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "news"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedArticleList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/games/": {
+            "get": {
+                "operationId": "v1_games_list",
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/GameCard"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/games/{slug}/": {
+            "get": {
+                "operationId": "v1_games_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Hub"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/games/{slug}/patches/": {
+            "get": {
+                "operationId": "v1_games_patches_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PatchesPage"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/games/{slug}/requirements/": {
+            "get": {
+                "operationId": "v1_games_requirements_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/RequirementsPage"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/games/{slug}/videos/": {
+            "get": {
+                "operationId": "v1_games_videos_retrieve",
+                "parameters": [
+                    {
+                        "in": "path",
+                        "name": "slug",
+                        "schema": {
+                            "type": "string"
+                        },
+                        "required": true
+                    }
+                ],
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/VideosPage"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/news/": {
+            "get": {
+                "operationId": "v1_news_list",
+                "description": "Curated (human-approved) items only. Our summary + source link.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "game",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "required": false,
+                        "in": "query",
+                        "description": "A page number within the paginated result set.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "page_size",
+                        "required": false,
+                        "in": "query",
+                        "description": "Number of results to return per page.",
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "tags": [
+                    "news"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PaginatedArticleList"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/newsletter/confirm/": {
+            "post": {
+                "operationId": "v1_newsletter_confirm_create",
+                "tags": [
+                    "newsletter"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Ok"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/newsletter/subscribe/": {
+            "post": {
+                "operationId": "v1_newsletter_subscribe_create",
+                "tags": [
+                    "newsletter"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SubscribeRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SubscribeRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/SubscribeRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Ok"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/newsletter/unsubscribe/": {
+            "get": {
+                "operationId": "v1_newsletter_unsubscribe_retrieve",
+                "description": "POST (page button / RFC 8058 one-click). GET shows a minimal confirmation for plain mail-client links.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "newsletter"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Ok"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            },
+            "post": {
+                "operationId": "v1_newsletter_unsubscribe_create",
+                "description": "POST (page button / RFC 8058 one-click). GET shows a minimal confirmation for plain mail-client links.",
+                "parameters": [
+                    {
+                        "in": "query",
+                        "name": "token",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "tags": [
+                    "newsletter"
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRequest"
+                            }
+                        },
+                        "application/x-www-form-urlencoded": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRequest"
+                            }
+                        },
+                        "multipart/form-data": {
+                            "schema": {
+                                "$ref": "#/components/schemas/TokenRequest"
+                            }
+                        }
+                    },
+                    "required": true
+                },
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Ok"
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/sitemap/": {
+            "get": {
+                "operationId": "v1_sitemap_list",
+                "tags": [
+                    "seo"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/SitemapEntry"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
+        "/api/v1/ticker/": {
+            "get": {
+                "operationId": "v1_ticker_list",
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Change"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Article": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "game_slug": {
+                        "type": "string"
+                    },
+                    "game_name": {
+                        "type": "string"
+                    },
+                    "title": {
+                        "type": "string",
+                        "maxLength": 300
+                    },
+                    "source_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "maxLength": 1000
+                    },
+                    "source_name": {
+                        "type": "string",
+                        "description": "Attribution shown to readers",
+                        "maxLength": 120
+                    },
+                    "our_summary": {
+                        "type": "string",
+                        "description": "OUR 2-3 line summary (original wording)"
+                    },
+                    "tags": {},
+                    "topic": {
+                        "type": "string",
+                        "maxLength": 30
+                    },
+                    "verification": {
+                        "$ref": "#/components/schemas/VerificationEnum"
+                    },
+                    "status": {
+                        "$ref": "#/components/schemas/StatusEnum"
+                    },
+                    "published_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "created_at",
+                    "game_name",
+                    "game_slug",
+                    "id",
+                    "source_url",
+                    "title",
+                    "verification"
+                ]
+            },
+            "Change": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "game_slug": {
+                        "type": "string"
+                    },
+                    "game_name": {
+                        "type": "string"
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/ChangeKindEnum"
+                    },
+                    "title": {
+                        "type": "string",
+                        "maxLength": 240
+                    },
+                    "detail": {
+                        "type": "string",
+                        "description": "what changed, e.g. 'Date: unknown -> 2027-03-01'",
+                        "maxLength": 500
+                    },
+                    "version_label": {
+                        "type": "string",
+                        "maxLength": 60
+                    },
+                    "source_url": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "uri",
+                                "maxLength": 1000
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "verification": {
+                        "$ref": "#/components/schemas/VerificationEnum"
+                    },
+                    "occurred_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "required": [
+                    "game_name",
+                    "game_slug",
+                    "id",
+                    "kind",
+                    "occurred_at",
+                    "title",
+                    "verification"
+                ]
+            },
+            "ChangeKindEnum": {
+                "enum": [
+                    "release",
+                    "patch",
+                    "requirement",
+                    "news",
+                    "video"
+                ],
+                "type": "string",
+                "description": "* `release` - Release\n* `patch` - Patch\n* `requirement` - Requirement\n* `news` - News\n* `video` - Video"
+            },
+            "CountdownModeEnum": {
+                "enum": [
+                    "live",
+                    "unconfirmed"
+                ],
+                "type": "string",
+                "description": "* `live` - live\n* `unconfirmed` - unconfirmed"
+            },
+            "Faq": {
+                "type": "object",
+                "properties": {
+                    "q": {
+                        "type": "string"
+                    },
+                    "a": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "a",
+                    "q"
+                ]
+            },
+            "GameCard": {
+                "type": "object",
+                "properties": {
+                    "slug": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "pattern": "^[-a-zA-Z0-9_]+$"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 200
+                    },
+                    "short_name": {
+                        "type": "string",
+                        "maxLength": 80
+                    },
+                    "tagline": {
+                        "type": "string",
+                        "maxLength": 240
+                    },
+                    "platform": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "is_placeholder": {
+                        "type": "boolean",
+                        "description": "Seeded placeholder: page stays noindex until real content exists."
+                    },
+                    "release": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Release"
+                            }
+                        ],
+                        "nullable": true,
+                        "readOnly": true
+                    },
+                    "latest_changes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Change"
+                        },
+                        "readOnly": true
+                    },
+                    "seo": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Seo"
+                            }
+                        ],
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "latest_changes",
+                    "name",
+                    "release",
+                    "seo",
+                    "slug"
+                ]
+            },
+            "Hub": {
+                "type": "object",
+                "properties": {
+                    "game": {
+                        "$ref": "#/components/schemas/GameCard"
+                    },
+                    "release": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Release"
+                            }
+                        ],
+                        "nullable": true
+                    },
+                    "release_history": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Release"
+                        }
+                    },
+                    "requirements": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Requirement"
+                        }
+                    },
+                    "patches": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Patch"
+                        }
+                    },
+                    "videos": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Video"
+                        }
+                    },
+                    "changes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Change"
+                        }
+                    },
+                    "news": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Article"
+                        }
+                    },
+                    "faq": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Faq"
+                        }
+                    },
+                    "checker_enabled": {
+                        "type": "boolean"
+                    },
+                    "affiliate_categories": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "sections": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "seo": {
+                        "$ref": "#/components/schemas/Seo"
+                    }
+                },
+                "required": [
+                    "affiliate_categories",
+                    "changes",
+                    "checker_enabled",
+                    "faq",
+                    "game",
+                    "news",
+                    "patches",
+                    "release",
+                    "release_history",
+                    "requirements",
+                    "sections",
+                    "seo",
+                    "videos"
+                ]
+            },
+            "Ok": {
+                "type": "object",
+                "properties": {
+                    "ok": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "ok"
+                ]
+            },
+            "PaginatedArticleList": {
+                "type": "object",
+                "required": [
+                    "count",
+                    "results"
+                ],
+                "properties": {
+                    "count": {
+                        "type": "integer",
+                        "example": 123
+                    },
+                    "next": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=4"
+                    },
+                    "previous": {
+                        "type": "string",
+                        "nullable": true,
+                        "format": "uri",
+                        "example": "http://api.example.org/accounts/?page=2"
+                    },
+                    "results": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Article"
+                        }
+                    }
+                }
+            },
+            "Patch": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "string",
+                        "maxLength": 60
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true
+                    },
+                    "notes_url": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "uri",
+                                "maxLength": 1000
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "our_summary": {
+                        "type": "string"
+                    },
+                    "verification": {
+                        "$ref": "#/components/schemas/VerificationEnum"
+                    },
+                    "source_count": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0
+                    },
+                    "is_placeholder": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "verification",
+                    "version"
+                ]
+            },
+            "PatchesPage": {
+                "type": "object",
+                "properties": {
+                    "game": {
+                        "$ref": "#/components/schemas/GameCard"
+                    },
+                    "seo": {
+                        "$ref": "#/components/schemas/Seo"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Patch"
+                        }
+                    }
+                },
+                "required": [
+                    "game",
+                    "items",
+                    "seo"
+                ]
+            },
+            "PublicConfig": {
+                "type": "object",
+                "properties": {
+                    "flags": {
+                        "type": "object",
+                        "additionalProperties": {
+                            "type": "boolean"
+                        }
+                    },
+                    "contact_email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "kill_switch": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "contact_email",
+                    "flags",
+                    "kill_switch"
+                ]
+            },
+            "Release": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "platform": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "nullable": true,
+                        "description": "Empty = no date known"
+                    },
+                    "confidence": {
+                        "$ref": "#/components/schemas/VerificationEnum"
+                    },
+                    "source_url": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "uri",
+                                "maxLength": 1000
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "source_count": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0
+                    },
+                    "note": {
+                        "type": "string",
+                        "maxLength": 240
+                    },
+                    "is_placeholder": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
+                    },
+                    "countdown_mode": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/CountdownModeEnum"
+                            }
+                        ],
+                        "readOnly": true
+                    }
+                },
+                "required": [
+                    "confidence",
+                    "countdown_mode",
+                    "created_at",
+                    "id"
+                ]
+            },
+            "Requirement": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "platform": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "tier": {
+                        "$ref": "#/components/schemas/TierEnum"
+                    },
+                    "os": {
+                        "type": "string",
+                        "maxLength": 120
+                    },
+                    "cpu": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "gpu": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "ram_gb": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "storage_gb": {
+                        "type": "integer",
+                        "maximum": 2147483647,
+                        "minimum": 0,
+                        "nullable": true
+                    },
+                    "cpu_ref": {
+                        "type": "string",
+                        "description": "id in the web hardware catalogue",
+                        "maxLength": 60
+                    },
+                    "gpu_ref": {
+                        "type": "string",
+                        "description": "id in the web hardware catalogue",
+                        "maxLength": 60
+                    },
+                    "notes": {
+                        "type": "string",
+                        "maxLength": 300
+                    },
+                    "source_url": {
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "format": "uri",
+                                "maxLength": 1000
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "verification": {
+                        "$ref": "#/components/schemas/VerificationEnum"
+                    },
+                    "source_count": {
+                        "type": "integer",
+                        "maximum": 32767,
+                        "minimum": 0
+                    },
+                    "is_placeholder": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "tier",
+                    "verification"
+                ]
+            },
+            "RequirementsPage": {
+                "type": "object",
+                "properties": {
+                    "game": {
+                        "$ref": "#/components/schemas/GameCard"
+                    },
+                    "seo": {
+                        "$ref": "#/components/schemas/Seo"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Requirement"
+                        }
+                    },
+                    "release": {
+                        "allOf": [
+                            {
+                                "$ref": "#/components/schemas/Release"
+                            }
+                        ],
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "game",
+                    "items",
+                    "release",
+                    "seo"
+                ]
+            },
+            "Seo": {
+                "type": "object",
+                "properties": {
+                    "indexable": {
+                        "type": "boolean"
+                    },
+                    "reason": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "indexable",
+                    "reason"
+                ]
+            },
+            "SitemapEntry": {
+                "type": "object",
+                "properties": {
+                    "path": {
+                        "type": "string"
+                    },
+                    "lastmod": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    }
+                },
+                "required": [
+                    "lastmod",
+                    "path"
+                ]
+            },
+            "StatusEnum": {
+                "enum": [
+                    "new",
+                    "queued",
+                    "published",
+                    "rejected"
+                ],
+                "type": "string",
+                "description": "* `new` - New\n* `queued` - Queued for review\n* `published` - Published\n* `rejected` - Rejected"
+            },
+            "SubscribeRequest": {
+                "type": "object",
+                "properties": {
+                    "email": {
+                        "type": "string",
+                        "format": "email",
+                        "minLength": 1,
+                        "maxLength": 254
+                    },
+                    "website": {
+                        "type": "string",
+                        "description": "honeypot: must stay empty"
+                    }
+                },
+                "required": [
+                    "email"
+                ]
+            },
+            "TierEnum": {
+                "enum": [
+                    "min",
+                    "rec"
+                ],
+                "type": "string",
+                "description": "* `min` - Minimum\n* `rec` - Recommended"
+            },
+            "TokenRequest": {
+                "type": "object",
+                "properties": {
+                    "token": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 64
+                    }
+                },
+                "required": [
+                    "token"
+                ]
+            },
+            "VerificationEnum": {
+                "enum": [
+                    "rumour",
+                    "reported",
+                    "confirmed"
+                ],
+                "type": "string",
+                "description": "* `rumour` - Rumour\n* `reported` - Reported\n* `confirmed` - Confirmed"
+            },
+            "Video": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "youtube_id": {
+                        "type": "string",
+                        "maxLength": 20
+                    },
+                    "title": {
+                        "type": "string",
+                        "maxLength": 300
+                    },
+                    "channel": {
+                        "type": "string",
+                        "maxLength": 160
+                    },
+                    "kind": {
+                        "$ref": "#/components/schemas/VideoKindEnum"
+                    },
+                    "published_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "nullable": true
+                    },
+                    "is_placeholder": {
+                        "type": "boolean"
+                    }
+                },
+                "required": [
+                    "id",
+                    "title",
+                    "youtube_id"
+                ]
+            },
+            "VideoKindEnum": {
+                "enum": [
+                    "trailer",
+                    "gameplay",
+                    "other"
+                ],
+                "type": "string",
+                "description": "* `trailer` - Trailer\n* `gameplay` - Gameplay\n* `other` - Other"
+            },
+            "VideosPage": {
+                "type": "object",
+                "properties": {
+                    "game": {
+                        "$ref": "#/components/schemas/GameCard"
+                    },
+                    "seo": {
+                        "$ref": "#/components/schemas/Seo"
+                    },
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Video"
+                        }
+                    }
+                },
+                "required": [
+                    "game",
+                    "items",
+                    "seo"
+                ]
+            }
+        }
+    }
+}

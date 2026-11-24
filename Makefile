@@ -54,7 +54,7 @@ fmt:
 	$(DEV) run --rm --no-deps api sh -c "ruff check --fix . && black ."
 
 schema: ## regenerate OpenAPI schema + typed client
-	$(DEV) run --rm api python manage.py spectacular --file /repo/packages/api-client/openapi.json --validate
+	$(DEV) run --rm api python manage.py spectacular --format openapi-json --file /repo/packages/api-client/openapi.json --validate
 	cd packages/api-client && npm run generate
 
 schema-check: ## fail if committed schema drifted (CI)

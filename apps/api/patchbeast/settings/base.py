@@ -110,7 +110,6 @@ SPECTACULAR_SETTINGS = {
     "COMPONENT_SPLIT_REQUEST": True,
     "ENUM_NAME_OVERRIDES": {
         "VerificationEnum": "modules.common.choices.Verification",
-        "ReleaseConfidenceEnum": "modules.common.choices.Verification",
     },
 }
 

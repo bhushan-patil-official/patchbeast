@@ -1,0 +1,85 @@
+/* Patchbeast "launch control" tokens. Colours are space-separated RGB channels so Tailwind can add alpha.
+   Dark is the default; [data-theme="light"] is the optional theme. Signal colours carry MEANING only. */
+:root {
+  /* surfaces (layered) */
+  --pb-bg: 11 13 16; /* #0B0D10 */
+  --pb-surface-1: 18 21 26; /* #12151A */
+  --pb-surface-2: 24 28 35; /* #181C23 */
+  --pb-surface-3: 32 37 46; /* #20252E */
+  --pb-border: 48 55 68; /* #303744 */
+  --pb-border-strong: 74 83 100;
+  /* text */
+  --pb-text: 236 238 242; /* #ECEEF2 */
+  --pb-text-muted: 154 163 178; /* #9AA3B2 */
+  /* signature accent: ultraviolet #7C5CFF (decor, rings) + AA-safe variants for text/buttons */
+  --pb-accent: 124 92 255;
+  --pb-accent-strong: 104 70 238; /* button bg: white text >= 4.5:1 */
+  --pb-accent-text: 168 150 255; /* accent as text on dark surfaces */
+  --pb-on-accent: 255 255 255;
+  /* signal colours: ONLY for verification meaning */
+  --pb-confirmed: 46 229 157; /* #2EE59D */
+  --pb-reported: 255 176 32; /* #FFB020 */
+  --pb-rumour: 138 147 166; /* #8A93A6 */
+  --pb-alert: 255 90 95; /* #FF5A5F */
+  /* radius / spacing / elevation / motion: defined once */
+  --pb-radius-sm: 6px;
+  --pb-radius: 10px;
+  --pb-radius-lg: 16px;
+  --pb-shadow-1: 0 1px 0 rgb(255 255 255 / 0.03) inset, 0 1px 2px rgb(0 0 0 / 0.4);
+  --pb-shadow-2: 0 8px 30px rgb(0 0 0 / 0.45);
+  --pb-glow: 0 0 0 1px rgb(var(--pb-accent) / 0.5), 0 0 24px rgb(var(--pb-accent) / 0.25);
+  --pb-ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --pb-dur-fast: 120ms;
+  --pb-dur: 200ms;
+  --pb-dur-slow: 400ms;
+  color-scheme: dark;
+}
+
+:root[data-theme="light"] {
+  --pb-bg: 246 247 249;
+  --pb-surface-1: 255 255 255;
+  --pb-surface-2: 240 242 246;
+  --pb-surface-3: 229 232 239;
+  --pb-border: 208 213 224;
+  --pb-border-strong: 160 168 184;
+  --pb-text: 18 21 26;
+  --pb-text-muted: 86 95 112;
+  --pb-accent: 109 77 242;
+  --pb-accent-strong: 104 70 238;
+  --pb-accent-text: 91 63 224;
+  --pb-confirmed: 8 120 77;
+  --pb-reported: 138 86 0;
+  --pb-rumour: 89 98 115;
+  --pb-alert: 196 38 44;
+  --pb-shadow-1: 0 1px 2px rgb(16 24 40 / 0.08);
+  --pb-shadow-2: 0 8px 30px rgb(16 24 40 / 0.12);
+  color-scheme: light;
+}
+
+/* motion: purposeful and light; fully disabled for reduced-motion users */
+@keyframes pb-tick {
+  0% { opacity: 0.55; transform: translateY(-1px); }
+  100% { opacity: 1; transform: none; }
+}
+@keyframes pb-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+.pb-tick { animation: pb-tick var(--pb-dur) var(--pb-ease); }
+.pb-marquee { animation: pb-marquee var(--pb-marquee-duration, 60s) linear infinite; }
+.pb-ticker:hover .pb-marquee,
+.pb-ticker:focus-within .pb-marquee { animation-play-state: paused; }
+
+@media (prefers-reduced-motion: reduce) {
+  .pb-tick, .pb-marquee { animation: none !important; }
+  * { scroll-behavior: auto !important; transition-duration: 0.01ms !important; }
+  .pb-ticker { overflow-x: auto; }
+  .pb-marquee-dup { display: none; }
+}
+
+.pb-focus { outline: none; }
+.pb-focus:focus-visible, :where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid rgb(var(--pb-accent));
+  outline-offset: 2px;
+  border-radius: var(--pb-radius-sm);
+}

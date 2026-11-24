@@ -158,3 +158,29 @@ class GameChangesList(generics.ListAPIView):
 
     def get_queryset(self):
         return selectors.public_changes(_game_or_404(self.kwargs["slug"]))
+
+
+@extend_schema(parameters=[OpenApiParameter("game", str, required=False)], tags=["news"])
+class StoriesList(generics.ListAPIView):
+    """Our written briefings (human-approved), newest first."""
+
+    serializer_class = s.StoryCardSerializer
+
+    def get_queryset(self):
+        qs = selectors.published_stories()
+        game = self.request.query_params.get("game")
+        return qs.filter(game__slug=game) if game else qs
+
+
+@extend_schema(responses=s.StoryDetailSerializer, tags=["news"])
+@api_view(["GET"])
+def story_detail(request, slug: str, story: str):
+    g = _game_or_404(slug)
+    st = selectors.published_stories(g).filter(slug=story).first()
+    if st is None:
+        raise NotFound("story not found")
+    data = {
+        "game": g, "story": st, "blocks": st.blocks, "key_points": st.key_points,
+        "sources": st.sources, "seo": selectors.seo_for_story(g, st),
+    }  # fmt: skip
+    return Response(s.StoryDetailSerializer(data).data)

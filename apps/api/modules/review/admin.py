@@ -23,6 +23,7 @@ class ReviewQueueAdmin(admin.ModelAdmin):
         return [
             path("act/<int:pk>/", v(require_POST(self.act)), name="review_act"),
             path("video/<int:pk>/", v(require_POST(self.video_act)), name="review_video_act"),
+            path("story/<int:pk>/", v(require_POST(self.story_act)), name="review_story_act"),
             *super().get_urls(),
         ]
 
@@ -33,6 +34,7 @@ class ReviewQueueAdmin(admin.ModelAdmin):
             "opts": self.model._meta,
             "items": services.queue(),
             "videos": services.video_queue(),
+            "stories": services.story_queue(),
             "act_url": "admin:review_act",
         }
         return TemplateResponse(request, "review/queue.html", ctx)
@@ -61,6 +63,24 @@ class ReviewQueueAdmin(admin.ModelAdmin):
                     tags=request.POST.get("tags", ""),
                 )
                 messages.success(request, "Saved.")
+        except ValueError as e:
+            messages.error(request, str(e))
+        return HttpResponseRedirect(reverse("admin:review_queuedarticle_changelist"))
+
+    def story_act(self, request: HttpRequest, pk: int):
+        n = len([k for k in request.POST if k.startswith("block_")])
+        blocks = [request.POST.get(f"block_{i}", "") for i in range(n)]
+        try:
+            services.story_decision(
+                pk,
+                request.user,
+                request.POST.get("action", ""),
+                title=request.POST.get("title"),
+                dek=request.POST.get("dek"),
+                blocks=blocks if n else None,
+                reason=request.POST.get("reason", ""),
+            )
+            messages.success(request, "Story updated.")
         except ValueError as e:
             messages.error(request, str(e))
         return HttpResponseRedirect(reverse("admin:review_queuedarticle_changelist"))

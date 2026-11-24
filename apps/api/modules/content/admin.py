@@ -4,7 +4,7 @@ from django.utils.html import format_html
 from modules.common.admin import AuditAdmin
 
 from . import services
-from .models import Article, Change, Evidence, Patch, Requirement, Video
+from .models import Article, Change, Evidence, Patch, Requirement, Story, Video
 
 
 @admin.register(Article)
@@ -88,3 +88,11 @@ class EvidenceAdmin(AuditAdmin):
 class ChangeAdmin(AuditAdmin):
     list_display = ("occurred_at", "game", "kind", "title", "verification", "is_public")
     list_filter = ("kind", "game", "is_public")
+
+
+@admin.register(Story)
+class StoryAdmin(AuditAdmin):
+    list_display = ("title", "game", "status", "verification", "published_at", "created_at")
+    list_filter = ("status", "game")
+    search_fields = ("title",)
+    readonly_fields = ("cluster_key", "model", "sources", "verification")

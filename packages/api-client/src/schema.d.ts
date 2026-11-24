@@ -134,6 +134,22 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/games/{slug}/stories/{story}/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get: operations["v1_games_stories_retrieve"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/games/{slug}/videos/": {
         parameters: {
             query?: never;
@@ -225,6 +241,23 @@ export interface paths {
             cookie?: never;
         };
         get: operations["v1_sitemap_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stories/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Our written briefings (human-approved), newest first. */
+        get: operations["v1_stories_list"];
         put?: never;
         post?: never;
         delete?: never;
@@ -337,6 +370,7 @@ export interface components {
             videos: components["schemas"]["Video"][];
             changes: components["schemas"]["Change"][];
             news: components["schemas"]["Article"][];
+            stories: components["schemas"]["StoryCard"][];
             faq: components["schemas"]["Faq"][];
             checker_enabled: boolean;
             affiliate_categories: string[];
@@ -375,6 +409,21 @@ export interface components {
              */
             previous?: string | null;
             results: components["schemas"]["Change"][];
+        };
+        PaginatedStoryCardList: {
+            /** @example 123 */
+            count: number;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=4
+             */
+            next?: string | null;
+            /**
+             * Format: uri
+             * @example http://api.example.org/accounts/?page=2
+             */
+            previous?: string | null;
+            results: components["schemas"]["StoryCard"][];
         };
         Patch: {
             readonly id: number;
@@ -485,6 +534,38 @@ export interface components {
          * @enum {string}
          */
         StatusEnum: "new" | "queued" | "published" | "rejected";
+        StoryBlock: {
+            text: string;
+            sources: number[];
+        };
+        StoryCard: {
+            readonly id: number;
+            readonly slug: string;
+            game_slug: string;
+            game_name: string;
+            readonly title: string;
+            readonly dek: string;
+            verification: components["schemas"]["VerificationEnum"];
+            tags: string[];
+            readonly source_count: number;
+            /** Format: date-time */
+            readonly published_at: string | null;
+        };
+        StoryDetail: {
+            readonly game: components["schemas"]["GameCard"];
+            story: components["schemas"]["StoryCard"];
+            blocks: components["schemas"]["StoryBlock"][];
+            key_points: string[];
+            sources: components["schemas"]["StorySource"][];
+            seo: components["schemas"]["Seo"];
+        };
+        StorySource: {
+            article_id: number;
+            /** Format: uri */
+            url: string;
+            name: string;
+            title: string;
+        };
         SubscribeRequest: {
             /** Format: email */
             email: string;
@@ -716,6 +797,28 @@ export interface operations {
             };
         };
     };
+    v1_games_stories_retrieve: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+                story: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StoryDetail"];
+                };
+            };
+        };
+    };
     v1_games_videos_retrieve: {
         parameters: {
             query?: never;
@@ -875,6 +978,31 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["SitemapEntry"][];
+                };
+            };
+        };
+    };
+    v1_stories_list: {
+        parameters: {
+            query?: {
+                game?: string;
+                /** @description A page number within the paginated result set. */
+                page?: number;
+                /** @description Number of results to return per page. */
+                page_size?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PaginatedStoryCardList"];
                 };
             };
         };

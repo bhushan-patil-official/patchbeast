@@ -11,6 +11,7 @@ app.config_from_object("django.conf:settings", namespace="CELERY")
 app.autodiscover_tasks(
     [
         "modules.ingest",
+        "modules.content",
         "modules.platform",
         "modules.newsletter",
         "modules.sources",
@@ -21,6 +22,7 @@ app.conf.beat_schedule = {
     "poll-due-sources": {"task": "ingest.poll_due_sources", "schedule": 60.0},
     "requeue-stuck-articles": {"task": "ingest.requeue_stuck", "schedule": 600.0},
     "check-health-alerts": {"task": "platform.check_alerts", "schedule": 300.0},
+    "build-stories": {"task": "llm.build_stories", "schedule": crontab(minute=20, hour="*/6")},
     "renew-websub": {"task": "ingest.renew_websub", "schedule": crontab(hour=4, minute=10)},
     "prune-logs": {"task": "platform.prune", "schedule": crontab(hour=3, minute=40)},
     "weekly-digest": {

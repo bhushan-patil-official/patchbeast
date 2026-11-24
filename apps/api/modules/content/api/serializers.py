@@ -3,7 +3,7 @@ from rest_framework import serializers
 
 from modules.common.choices import Verification
 from modules.content import selectors
-from modules.content.models import Article, Change, Patch, Requirement, Video
+from modules.content.models import Article, Change, Patch, Requirement, Story, Video
 from modules.games.models import Game, Release
 from modules.games.selectors import current_releases, hub_path
 
@@ -116,6 +116,45 @@ class ArticleSerializer(serializers.ModelSerializer):
                   "status", "published_at", "created_at"]  # fmt: skip
 
 
+class StoryBlockSerializer(serializers.Serializer):
+    text = serializers.CharField()
+    sources = serializers.ListField(child=serializers.IntegerField())
+
+
+class StorySourceSerializer(serializers.Serializer):
+    article_id = serializers.IntegerField()
+    url = serializers.URLField()
+    name = serializers.CharField(allow_blank=True)
+    title = serializers.CharField()
+
+
+class StoryCardSerializer(serializers.ModelSerializer):
+    game_slug = serializers.CharField(source="game.slug")
+    game_name = serializers.CharField(source="game.name")
+    verification = serializers.ChoiceField(choices=Verification.choices)
+    tags = serializers.ListField(child=serializers.CharField())
+    source_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Story
+        fields = [
+            "id",
+            "slug",
+            "game_slug",
+            "game_name",
+            "title",
+            "dek",
+            "verification",
+            "tags",
+            "source_count",
+            "published_at",
+        ]
+        read_only_fields = fields
+
+    def get_source_count(self, s: Story) -> int:
+        return len(s.sources)
+
+
 class FaqSerializer(serializers.Serializer):
     q = serializers.CharField()
     a = serializers.CharField()
@@ -190,6 +229,7 @@ class HubSerializer(serializers.Serializer):
     videos = VideoSerializer(many=True)
     changes = ChangeSerializer(many=True)
     news = ArticleSerializer(many=True)
+    stories = StoryCardSerializer(many=True)
     faq = FaqSerializer(many=True)
     checker_enabled = serializers.BooleanField()
     affiliate_categories = serializers.ListField(child=serializers.CharField())
@@ -233,3 +273,16 @@ class RequirementsPageSerializer(SubpageSerializer):
 class SitemapEntrySerializer(serializers.Serializer):
     path = serializers.CharField()
     lastmod = serializers.DateTimeField(allow_null=True)
+
+
+class StoryDetailSerializer(serializers.Serializer):
+    game = serializers.SerializerMethodField()
+    story = StoryCardSerializer()
+    blocks = StoryBlockSerializer(many=True)
+    key_points = serializers.ListField(child=serializers.CharField())
+    sources = StorySourceSerializer(many=True)
+    seo = SeoSerializer()
+
+    @extend_schema_field(GameCardSerializer)
+    def get_game(self, d):
+        return GameCardSerializer(d["game"]).data

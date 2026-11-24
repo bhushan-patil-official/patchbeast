@@ -16,7 +16,27 @@
 </style>{% endblock %}
 {% block content %}
 <p class="rq-help">Keys: <kbd>j</kbd>/<kbd>k</kbd> next/prev · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>e</kbd> edit summary · <kbd>s</kbd> save edit.
-  {{ items|length }} article(s) and {{ videos|length }} video(s) waiting. Our summary only: never paste source text.</p>
+  {{ items|length }} article(s), {{ stories|length }} story draft(s) and {{ videos|length }} video(s) waiting. Our summary only: never paste source text.</p>
+{% if stories %}<h2>Story drafts (written by the drafting assistant from our summaries; check every claim against the sources)</h2>{% endif %}
+{% for st in stories %}
+<form class="rq-card" method="post" action="{% url 'admin:review_story_act' st.pk %}" data-story="1">
+  {% csrf_token %}
+  <div class="rq-meta"><span class="rq-chip">{{ st.game.name }}</span><span class="rq-chip">{{ st.sources|length }} sources</span><span class="rq-chip">{{ st.verification }}</span><span class="rq-chip">{{ st.model|default:"model ?" }}</span></div>
+  {% if st.review_reason %}<div class="rq-reason">{{ st.review_reason }}</div>{% endif %}
+  <label>Title<input type="text" name="title" value="{{ st.title }}" maxlength="200"></label>
+  <label>Summary line<input type="text" name="dek" value="{{ st.dek }}" maxlength="300"></label>
+  {% for b in st.blocks %}
+  <label>Paragraph {{ forloop.counter }} <small>(cites {% for n in b.sources %}[{{ n|add:1 }}]{% endfor %})</small><textarea name="block_{{ forloop.counter0 }}" rows="4">{{ b.text }}</textarea></label>
+  {% endfor %}
+  <ol class="rq-reason" style="color:inherit">{% for src in st.sources %}<li><a href="{{ src.url }}" target="_blank" rel="noopener noreferrer nofollow">{{ src.name }}: {{ src.title }} ↗</a></li>{% endfor %}</ol>
+  <div class="rq-actions">
+    <button class="rq-approve" name="action" value="approve">Approve &amp; publish</button>
+    <button name="action" value="save">Save edit</button>
+    <button class="rq-reject" name="action" value="reject">Reject</button>
+  </div>
+</form>
+{% endfor %}
+
 {% for a in items %}
 <form class="rq-card" id="item-{{ a.pk }}" method="post" action="{% url act_url a.pk %}" data-index="{{ forloop.counter0 }}">
   {% csrf_token %}

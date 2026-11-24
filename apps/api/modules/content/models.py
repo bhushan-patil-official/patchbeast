@@ -213,3 +213,52 @@ class Change(AuditModel):
 
     class Meta:
         ordering = ["-occurred_at"]
+
+
+class Story(AuditModel):
+    """OUR written briefing synthesised from 2+ independent linked sources.
+
+    Drafted automatically from our own summaries and verified facts (never from source page text),
+    reviewed by a person before publishing. Every paragraph cites its sources."""
+
+    class Status(models.TextChoices):
+        DRAFT = "draft", "Draft (awaiting review)"
+        PUBLISHED = "published", "Published"
+        REJECTED = "rejected", "Rejected"
+
+    game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="stories")
+    slug = models.SlugField(max_length=120)
+    title = models.CharField(max_length=200)
+    dek = models.CharField(max_length=300, blank=True)
+    blocks = models.JSONField(default=list, help_text='[{"text": "...", "sources": [0, 1]}]')
+    key_points = models.JSONField(default=list, blank=True)
+    sources = models.JSONField(
+        default=list, help_text='[{"article_id": 1, "url": "...", "name": "...", "title": "..."}]'
+    )
+    tags = models.JSONField(default=list, blank=True)
+    articles = models.ManyToManyField(Article, related_name="stories", blank=True)
+    cluster_key = models.CharField(max_length=40, db_index=True)
+    status = models.CharField(
+        max_length=10, choices=Status.choices, default=Status.DRAFT, db_index=True
+    )
+    verification = models.CharField(
+        max_length=10, choices=Verification.choices, default=Verification.REPORTED
+    )
+    model = models.CharField(max_length=80, blank=True)
+    review_reason = models.CharField(max_length=300, blank=True)
+    published_at = models.DateTimeField(null=True, blank=True, db_index=True)
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL, null=True, blank=True, on_delete=models.SET_NULL, related_name="+"
+    )
+
+    class Meta:
+        ordering = ["-published_at", "-created_at"]
+        verbose_name_plural = "stories"
+        constraints = [
+            models.UniqueConstraint(fields=["game", "slug"], name="uniq_story_slug"),
+            models.UniqueConstraint(fields=["game", "cluster_key"], name="uniq_story_cluster"),
+        ]
+
+    def __str__(self) -> str:
+        return self.title[:80]

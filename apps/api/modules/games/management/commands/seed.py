@@ -24,22 +24,39 @@ def seed_anchor() -> Game:
             "tagline": "PC launch tracker (placeholder entry: nothing here is verified yet)",
             "platform": "pc",
             "is_placeholder": True,
+            "vanity_path": ANCHOR,
             "hub_config": {
+                "platforms": ["pc", "ps5", "xbox_series"],
                 "sections": ["release", "requirements", "patches", "videos", "news"],
                 "checker": True,
                 "affiliate_categories": ["gpu", "ssd", "ram"],
+                "seo_title": "Grand Theft Auto VI tracker: release dates by platform, patches and PC requirements",
+                "seo_description": "A sourced tracker for Grand Theft Auto VI: release status per platform with verification, patch notes, PC requirements and videos. Nothing is shown without a source.",
                 "faq": [
                     {
-                        "q": "Is there a confirmed PC release date?",
-                        "a": "This tracker only shows a date once it carries a source link and a verification status. Until then it reads 'Date unconfirmed'.",
-                    }
+                        "q": "Where does the information on this page come from?",
+                        "a": "From linked sources only. Every date, patch and requirement shows its source and a verification status (Confirmed, Reported or Rumour).",
+                    },
+                    {
+                        "q": "Why does the countdown say 'Date unconfirmed'?",
+                        "a": "We never run a countdown on a rumoured or missing date. It starts when a date is Reported or Confirmed with a source.",
+                    },
+                    {
+                        "q": "How does a date become 'Confirmed'?",
+                        "a": "When two independent sources, or a video, back it. One linked source makes it 'Reported'.",
+                    },
+                    {
+                        "q": "Can I get notified when something changes?",
+                        "a": "Yes: the weekly email digest below includes only confirmed changes for this game, each with its source.",
+                    },
                 ],
             },
         },
     )
-    if not Release.objects.filter(game=game, is_current=True).exists():
-        Release.objects.create(game=game, platform="pc", date=None, confidence=Verification.RUMOUR, is_placeholder=True,
-                               note="PLACEHOLDER: no release date has been verified.")  # fmt: skip
+    for plat in game.platforms:
+        if not Release.objects.filter(game=game, platform=plat, is_current=True).exists():
+            Release.objects.create(game=game, platform=plat, date=None, confidence=Verification.RUMOUR, is_placeholder=True,
+                                   note="PLACEHOLDER: no release date has been verified.")  # fmt: skip
     for tier in ("min", "rec"):
         Requirement.objects.get_or_create(game=game, platform="pc", tier=tier,
                                           defaults={"is_placeholder": True, "notes": "PLACEHOLDER: requirements not published."})  # fmt: skip
@@ -71,13 +88,19 @@ def seed_demo() -> Game:
         defaults={
             "name": "Demo Launch (sample data)", "short_name": "DEMO", "tagline": "Sample data to preview the UI. Not a real game. noindex.",
             "is_placeholder": True, "allow_index": False, "sort_order": 99,
-            "hub_config": {"checker": True, "faq": [{"q": "Is this real?", "a": "No. Every item on this page is DEMO data."}]},
+            "hub_config": {"platforms": ["pc", "ps5"], "checker": True, "faq": [{"q": "Is this real?", "a": "No. Every item on this page is DEMO data."}]},
         },
     )  # fmt: skip
     if not Release.objects.filter(game=game, is_current=True, date__isnull=False).exists():
         Release.objects.filter(game=game).update(is_current=False)
         Release.objects.create(game=game, platform="pc", date=(now + timedelta(days=90)).date(), confidence=Verification.REPORTED,
                                source_url="https://example.com/demo-release", source_count=1, note="DEMO data")  # fmt: skip
+    if not Release.objects.filter(game=game, platform="ps5", is_current=True).exists():
+        Release.objects.create(game=game, platform="ps5", date=(now + timedelta(days=120)).date(), confidence=Verification.CONFIRMED,
+                               source_url="https://example.com/demo-ps5", source_count=2, note="DEMO data")  # fmt: skip
+    Patch.objects.get_or_create(game=game, platform="ps5", version="0.9.1", defaults={
+        "date": (now - timedelta(days=6)).date(), "notes_url": "https://example.com/demo-ps5-patch",
+        "our_summary": "DEMO: sample PS5 patch 0.9.1.", "verification": Verification.REPORTED, "source_count": 1})  # fmt: skip
     Requirement.objects.update_or_create(game=game, platform="pc", tier="min", defaults={
         "os": "Windows 10 64-bit", "cpu": "Intel Core i5-8400 / AMD Ryzen 5 1600", "gpu": "NVIDIA GTX 1060 6GB / AMD RX 580 8GB",
         "ram_gb": 8, "storage_gb": 60, "cpu_ref": "intel-i5-8400", "gpu_ref": "nvidia-gtx-1060-6gb", "notes": "DEMO data",

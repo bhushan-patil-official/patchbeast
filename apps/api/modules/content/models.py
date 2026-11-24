@@ -67,6 +67,7 @@ class Article(AuditModel):
 
 class Patch(AuditModel):
     game = models.ForeignKey(Game, on_delete=models.CASCADE, related_name="patches")
+    platform = models.CharField(max_length=20, default="pc")
     version = models.CharField(max_length=60)
     date = models.DateField(null=True, blank=True)
     notes_url = models.URLField(max_length=1000, blank=True)
@@ -80,7 +81,9 @@ class Patch(AuditModel):
     class Meta:
         ordering = ["-date", "-created_at"]
         constraints = [
-            models.UniqueConstraint(fields=["game", "version"], name="uniq_patch_version")
+            models.UniqueConstraint(
+                fields=["game", "platform", "version"], name="uniq_patch_version"
+            )
         ]
 
     def __str__(self) -> str:

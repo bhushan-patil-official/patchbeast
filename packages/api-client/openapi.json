@@ -137,6 +137,13 @@
                 "operationId": "v1_games_patches_retrieve",
                 "parameters": [
                     {
+                        "in": "query",
+                        "name": "platform",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
                         "in": "path",
                         "name": "slug",
                         "schema": {
@@ -678,6 +685,25 @@
                         "maxLength": 50,
                         "pattern": "^[-a-zA-Z0-9_]+$"
                     },
+                    "vanity_path": {
+                        "nullable": true,
+                        "description": "Optional short URL for a flagship page, e.g. 'gta-6-pc' -> /gta-6-pc (the /games/<slug> URL then redirects).",
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "maxLength": 60,
+                                "pattern": "^[-a-zA-Z0-9_]+$"
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
+                    },
+                    "path": {
+                        "type": "string",
+                        "readOnly": true
+                    },
                     "name": {
                         "type": "string",
                         "maxLength": 200
@@ -694,6 +720,13 @@
                         "type": "string",
                         "maxLength": 20
                     },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Platform"
+                        },
+                        "readOnly": true
+                    },
                     "is_placeholder": {
                         "type": "boolean",
                         "description": "Seeded placeholder: page stays noindex until real content exists."
@@ -705,6 +738,13 @@
                             }
                         ],
                         "nullable": true,
+                        "readOnly": true
+                    },
+                    "releases": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Release"
+                        },
                         "readOnly": true
                     },
                     "latest_changes": {
@@ -726,7 +766,10 @@
                 "required": [
                     "latest_changes",
                     "name",
+                    "path",
+                    "platforms",
                     "release",
+                    "releases",
                     "seo",
                     "slug"
                 ]
@@ -744,6 +787,24 @@
                             }
                         ],
                         "nullable": true
+                    },
+                    "releases": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Release"
+                        }
+                    },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Platform"
+                        }
+                    },
+                    "seo_title": {
+                        "type": "string"
+                    },
+                    "seo_description": {
+                        "type": "string"
                     },
                     "release_history": {
                         "type": "array",
@@ -814,11 +875,15 @@
                     "game",
                     "news",
                     "patches",
+                    "platforms",
                     "release",
                     "release_history",
+                    "releases",
                     "requirements",
                     "sections",
                     "seo",
+                    "seo_description",
+                    "seo_title",
                     "videos"
                 ]
             },
@@ -870,6 +935,10 @@
                     "id": {
                         "type": "integer",
                         "readOnly": true
+                    },
+                    "platform": {
+                        "type": "string",
+                        "maxLength": 20
                     },
                     "version": {
                         "type": "string",
@@ -928,12 +997,38 @@
                         "items": {
                             "$ref": "#/components/schemas/Patch"
                         }
+                    },
+                    "platforms": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Platform"
+                        }
+                    },
+                    "selected_platform": {
+                        "type": "string"
                     }
                 },
                 "required": [
                     "game",
                     "items",
+                    "platforms",
+                    "selected_platform",
                     "seo"
+                ]
+            },
+            "Platform": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "string"
+                    },
+                    "name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "id",
+                    "name"
                 ]
             },
             "PublicConfig": {
@@ -1189,6 +1284,19 @@
                         "format": "email",
                         "minLength": 1,
                         "maxLength": 254
+                    },
+                    "game": {
+                        "description": "game slug: only that game's changes; empty = all games",
+                        "oneOf": [
+                            {
+                                "type": "string",
+                                "pattern": "^[-a-zA-Z0-9_]+$"
+                            },
+                            {
+                                "type": "string",
+                                "maxLength": 0
+                            }
+                        ]
                     },
                     "website": {
                         "type": "string",

@@ -80,13 +80,13 @@ def test_digest_only_confirmed_changes_idempotent_with_unsubscribe(db, game):
         and "Just reported" not in text
         and "https://src.example.com/p" in text
     )
-    assert services.send_digest_to(s, run.iso_week, text, html)
+    assert services.send_digest_to(s, run.iso_week)
     msg = mail.outbox[-1]
     assert (
         "Unsubscribe" in msg.body
         and msg.extra_headers["List-Unsubscribe-Post"] == "List-Unsubscribe=One-Click"
     )
-    assert not services.send_digest_to(s, run.iso_week, text, html)  # once per week
+    assert not services.send_digest_to(s, run.iso_week)  # once per week
     assert services.start_weekly_digest()[1] == []  # run is idempotent per ISO week
 
 

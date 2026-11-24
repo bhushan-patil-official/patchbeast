@@ -21,7 +21,15 @@ class ReleaseInline(admin.TabularInline):
 
 @admin.register(Game)
 class GameAdmin(AuditAdmin):
-    list_display = ("name", "slug", "enabled", "is_placeholder", "allow_index", "sort_order")
+    list_display = (
+        "name",
+        "slug",
+        "vanity_path",
+        "enabled",
+        "is_placeholder",
+        "allow_index",
+        "sort_order",
+    )
     list_filter = ("enabled", "is_placeholder")
     prepopulated_fields = {"slug": ("name",)}
     inlines = [ReleaseInline]

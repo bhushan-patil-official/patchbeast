@@ -31,6 +31,9 @@ def game_hub(request, slug: str):
     cfg = game.hub_config or {}
     data = {
         "game": game, **h,
+        "platforms": selectors.platform_options(game),
+        "seo_title": cfg.get("seo_title", ""),
+        "seo_description": cfg.get("seo_description", ""),
         "faq": cfg.get("faq", []),
         "checker_enabled": bool(cfg.get("checker", True)),
         "affiliate_categories": cfg.get("affiliate_categories", ["gpu", "ssd", "ram"]),
@@ -40,19 +43,28 @@ def game_hub(request, slug: str):
     return Response(s.HubSerializer(data).data)
 
 
-@extend_schema(responses=s.PatchesPageSerializer, tags=["games"])
+@extend_schema(
+    parameters=[OpenApiParameter("platform", str, required=False)],
+    responses=s.PatchesPageSerializer,
+    tags=["games"],
+)
 @api_view(["GET"])
 def game_patches(request, slug: str):
     g = _game_or_404(slug)
-    return Response(
-        s.PatchesPageSerializer(
-            {
-                "game": g,
-                "items": selectors.Patch.objects.filter(game=g),
-                "seo": selectors.seo_subpage(g, "patches"),
-            }
-        ).data
-    )
+    platform = request.query_params.get("platform", "")
+    items = selectors.Patch.objects.filter(game=g)
+    if platform in g.platforms:
+        items = items.filter(platform=platform)
+    else:
+        platform = ""
+    data = {
+        "game": g,
+        "items": items,
+        "platforms": selectors.platform_options(g),
+        "selected_platform": platform,
+        "seo": selectors.seo_subpage(g, "patches"),
+    }
+    return Response(s.PatchesPageSerializer(data).data)
 
 
 @extend_schema(responses=s.VideosPageSerializer, tags=["games"])

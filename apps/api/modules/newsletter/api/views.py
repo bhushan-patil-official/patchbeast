@@ -21,7 +21,9 @@ def subscribe(request):
     if ser.validated_data.get("website"):  # honeypot tripped: pretend success
         return Response({"ok": True})
     try:
-        services.subscribe(ser.validated_data["email"], source="web")
+        services.subscribe(
+            ser.validated_data["email"], source="web", game=ser.validated_data.get("game") or None
+        )
     except services.NewsletterDisabled:
         return Response({"ok": False}, status=404)
     return Response({"ok": True})

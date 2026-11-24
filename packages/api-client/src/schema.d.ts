@@ -275,19 +275,28 @@ export interface components {
         };
         GameCard: {
             slug: string;
+            /** @description Optional short URL for a flagship page, e.g. 'gta-6-pc' -> /gta-6-pc (the /games/<slug> URL then redirects). */
+            vanity_path?: (string) | null;
+            readonly path: string;
             name: string;
             short_name?: string;
             tagline?: string;
             platform?: string;
+            readonly platforms: components["schemas"]["Platform"][];
             /** @description Seeded placeholder: page stays noindex until real content exists. */
             is_placeholder?: boolean;
             readonly release: components["schemas"]["Release"] | null;
+            readonly releases: components["schemas"]["Release"][];
             readonly latest_changes: components["schemas"]["Change"][];
             readonly seo: components["schemas"]["Seo"];
         };
         Hub: {
             game: components["schemas"]["GameCard"];
             release: components["schemas"]["Release"] | null;
+            releases: components["schemas"]["Release"][];
+            platforms: components["schemas"]["Platform"][];
+            seo_title: string;
+            seo_description: string;
             release_history: components["schemas"]["Release"][];
             requirements: components["schemas"]["Requirement"][];
             patches: components["schemas"]["Patch"][];
@@ -320,6 +329,7 @@ export interface components {
         };
         Patch: {
             readonly id: number;
+            platform?: string;
             version: string;
             /** Format: date */
             date?: string | null;
@@ -333,6 +343,12 @@ export interface components {
             game: components["schemas"]["GameCard"];
             seo: components["schemas"]["Seo"];
             items: components["schemas"]["Patch"][];
+            platforms: components["schemas"]["Platform"][];
+            selected_platform: string;
+        };
+        Platform: {
+            id: string;
+            name: string;
         };
         PublicConfig: {
             flags: {
@@ -404,6 +420,8 @@ export interface components {
         SubscribeRequest: {
             /** Format: email */
             email: string;
+            /** @description game slug: only that game's changes; empty = all games */
+            game?: string;
             /** @description honeypot: must stay empty */
             website?: string;
         };
@@ -539,7 +557,9 @@ export interface operations {
     };
     v1_games_patches_retrieve: {
         parameters: {
-            query?: never;
+            query?: {
+                platform?: string;
+            };
             header?: never;
             path: {
                 slug: string;

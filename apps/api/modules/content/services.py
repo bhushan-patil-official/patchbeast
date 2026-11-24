@@ -12,6 +12,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from modules.common.choices import VERIFICATION_RANK, Verification
+from modules.common.platforms import short_label
 from modules.common.urlutils import registrable_domain
 from modules.games import services as games_services
 from modules.games.models import Game, Release
@@ -86,6 +87,11 @@ class FactDeferred(Exception):
     """Fact is valid but must go through human review (reason in str(e))."""
 
 
+def _plat_suffix(game: Game, platform: str) -> str:
+    """' (PS5)' only when the game tracks more than one platform."""
+    return f" ({short_label(platform)})" if len(game.platforms) > 1 else ""
+
+
 def _fmt_date(d: date_t | None) -> str:
     return d.isoformat() if d else "unknown"
 
@@ -99,7 +105,7 @@ def publish_release_fact(
         add_evidence(game, SubjectKind.RELEASE, cur.pk, source_url)
         old, new = recompute_verification(SubjectKind.RELEASE, cur.pk)
         if old != new:
-            record_change(game, Change.Kind.RELEASE, f"Release date now {new.capitalize()}", detail=f"{date_.isoformat()} ({old} -> {new})",
+            record_change(game, Change.Kind.RELEASE, f"Release date now {new.capitalize()}{_plat_suffix(game, platform)}", detail=f"Verification: {old} -> {new}",
                           source_url=source_url, verification=new, subject_kind=SubjectKind.RELEASE, subject_id=cur.pk)  # fmt: skip
         return cur
     real_current = cur is not None and not cur.is_placeholder and cur.date is not None
@@ -114,17 +120,24 @@ def publish_release_fact(
     add_evidence(game, SubjectKind.RELEASE, new_rel.pk, source_url)
     recompute_verification(SubjectKind.RELEASE, new_rel.pk)
     new_rel.refresh_from_db()
-    record_change(game, Change.Kind.RELEASE, "Release date updated", detail=f"{_fmt_date(prev.date if prev else None)} -> {date_.isoformat()}",
+    record_change(game, Change.Kind.RELEASE, f"Release date updated{_plat_suffix(game, platform)}", detail=f"{_fmt_date(prev.date if prev else None)} -> {date_.isoformat()}",
                   source_url=source_url, verification=new_rel.confidence, subject_kind=SubjectKind.RELEASE, subject_id=new_rel.pk)  # fmt: skip
     return new_rel
 
 
 @transaction.atomic
 def publish_patch_fact(
-    game: Game, *, version: str, date_: date_t | None, source_url: str, summary: str
+    game: Game,
+    *,
+    version: str,
+    date_: date_t | None,
+    source_url: str,
+    summary: str,
+    platform: str = "pc",
 ) -> Patch:
     patch, created = Patch.objects.get_or_create(
         game=game,
+        platform=platform,
         version=version,
         defaults={
             "date": date_,
@@ -136,7 +149,7 @@ def publish_patch_fact(
     add_evidence(game, SubjectKind.PATCH, patch.pk, source_url)
     old, new = recompute_verification(SubjectKind.PATCH, patch.pk)
     if created or old != new:
-        record_change(game, Change.Kind.PATCH, f"Patch {version}", detail=summary[:300], version_label=version, source_url=source_url,
+        record_change(game, Change.Kind.PATCH, f"Patch {version}{_plat_suffix(game, platform)}", detail=summary[:300], version_label=version, source_url=source_url,
                       verification=new, subject_kind=SubjectKind.PATCH, subject_id=patch.pk, occurred_at=None)  # fmt: skip
     patch.refresh_from_db()
     return patch
@@ -183,9 +196,11 @@ def try_auto_publish_fact(article: Article, cls) -> tuple[bool, str]:
         return False, f"confidence {cls.confidence:.2f} below threshold"
     if not article.source_url:
         return False, "no source url"
-    if fact.platform != "pc":
-        return False, f"platform {fact.platform} is not PC"
     game = article.game
+    if fact.platform not in game.platforms:
+        return False, f"platform {fact.platform} is not tracked for this game"
+    if fact.kind == "requirement" and fact.platform != "pc":
+        return False, "system requirements are tracked for PC only"
     try:
         if fact.kind == "release_date":
             publish_release_fact(
@@ -198,6 +213,7 @@ def try_auto_publish_fact(article: Article, cls) -> tuple[bool, str]:
                 date_=fact.patch_date,
                 source_url=article.source_url,
                 summary=cls.summary,
+                platform=fact.platform,
             )
         else:
             publish_requirement_fact(game, fact=fact, source_url=article.source_url)

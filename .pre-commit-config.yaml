@@ -1,0 +1,27 @@
+default_install_hook_types: [pre-commit, commit-msg]
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+        files: ^apps/api/
+      - id: ruff-format
+        name: ruff-format (disabled in favour of black)
+        stages: [manual]
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        files: ^apps/api/
+  - repo: https://github.com/pre-commit/mirrors-prettier
+    rev: v3.3.3
+    hooks:
+      - id: prettier
+        files: ^(apps/web|packages)/.*\.(ts|tsx|css|json|md)$
+        exclude: (openapi\.json|schema\.d\.ts)
+  - repo: https://github.com/compilerla/conventional-pre-commit
+    rev: v3.6.0
+    hooks:
+      - id: conventional-pre-commit
+        stages: [commit-msg]

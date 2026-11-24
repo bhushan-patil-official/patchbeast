@@ -15,9 +15,15 @@ Autonomous build decisions. Each is cheap to reverse; see `docs/adr/` for the st
 11. **Robots/ToS**: for `rss`/`api` sources `robots.txt` is checked (cached 24 h) unless the Source is flagged `official_feed` (a feed intended for machine consumption).
 12. **Revalidation** is tag-based + path-based; fires after commit, retried with backoff; failure only alerts, it never blocks publishing.
 13. **Hardware checker**: client-side, using a small *editorial tier catalogue* (approximate relative tiers, not benchmarks, clearly caveated). Requirement rows optionally reference catalogue ids (`cpu_ref`, `gpu_ref`); without refs the checker says it cannot compare automatically.
-14. **Newsletter**: double opt-in with signed single-use tokens, honeypot + throttle, unsubscribe link and `List-Unsubscribe` header, weekly digest idempotent per ISO week.
+14. **Newsletter**: double opt-in with unguessable random tokens (256-bit, stored server-side), honeypot + throttle, unsubscribe link and `List-Unsubscribe` header, weekly digest idempotent per ISO week.
 15. **Monetisation**: AdSlot/HardwareCard exist but render nothing unless the feature flag is on *and* configured; affiliate disclosure always shown with HardwareCard.
 16. **Analytics**: Plausible script only when `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` is set; no cookies.
 17. **Admin**: Django admin at `/admin/`; review queue at `/admin/review/`. Put it behind a strong password + 2FA at the proxy if you have a static IP (RUNBOOK).
 18. **Local verification limits**: the build sandbox had no Docker daemon, so compose files are validated statically (`docker compose config` where possible) and the app is smoke-tested natively against local Postgres/Redis. See README "Known gaps".
 19. **Vercel**: optional. `vercel.json` builds only the web app from the monorepo; the API remains on the VPS (ADR 0007).
+20. **Vercel**: `/vercel.json` (repo-root project: `npm ci`, `npm run build -w apps/web`, output `apps/web/.next`) and `apps/web/vercel.json` (Root Directory = `apps/web`). The web build never fails when the API is unreachable: the API layer returns a result object, pages degrade, ISR heals within 5 minutes. `BUILD_STANDALONE` (Docker only) must not be set on Vercel.
+21. **Near-duplicates from a different outlet** are kept as their own (queued) article *and* recorded as independent Evidence on the original, so a second outlet can raise a fact from Reported to Confirmed; same-outlet near-duplicates are dropped.
+22. **Videos** from sources flagged `trusted_channel` auto-publish (a video counts as confirming evidence for itself); all others queue for review.
+23. **Legal pages** (privacy/terms/affiliate/contact) are sensible templates, not legal advice: have them reviewed before launch, especially once ads/affiliate go live.
+24. **Revalidation tags**: `game:<slug>`, `games`, `ticker`, `sitemap`, `news`, `videos`; the web fetch layer tags each request accordingly.
+25. **No Celery result backend** (fire-and-forget tasks, idempotent by design); dead-letter = `AlertingTask.on_failure` alert + stuck-article sweeper, not a separate queue.

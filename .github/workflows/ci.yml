@@ -1,0 +1,110 @@
+name: ci
+on:
+  push:
+    branches: [main, "claude/**"]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  api:
+    name: API (lint, types, tests in container)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env: { POSTGRES_PASSWORD: patchbeast, POSTGRES_USER: patchbeast, POSTGRES_DB: patchbeast }
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U patchbeast" --health-interval 5s --health-timeout 3s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build api image (layer cache)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/api.Dockerfile
+          target: dev
+          load: true
+          tags: patchbeast-api:ci
+          cache-from: type=gha,scope=api
+          cache-to: type=gha,scope=api,mode=max
+      - name: ruff + black + mypy + pytest (inside the container)
+        run: |
+          docker run --rm --network host \
+            -e DJANGO_SETTINGS_MODULE=patchbeast.settings.test \
+            -e DATABASE_URL=postgres://patchbeast:patchbeast@localhost:5432/patchbeast \
+            -v "$PWD/apps/api:/app" patchbeast-api:ci \
+            sh -c "ruff check . && black --check . && mypy . && pytest"
+      - name: OpenAPI schema drift check
+        run: |
+          docker run --rm --network host \
+            -e DJANGO_SETTINGS_MODULE=patchbeast.settings.test \
+            -e DATABASE_URL=postgres://patchbeast:patchbeast@localhost:5432/patchbeast \
+            -v "$PWD/apps/api:/app" -v "$PWD/packages/api-client:/out" patchbeast-api:ci \
+            python manage.py spectacular --format openapi-json --file /out/openapi.json --validate
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run generate -w packages/api-client
+      - name: Fail if schema or generated client drifted
+        run: git diff --exit-code packages/api-client
+
+  web:
+    name: Web + design system (lint, types, unit tests, build, storybook)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm test
+      - name: Next build (API unreachable on purpose: pages must degrade, not fail)
+        run: npm run build
+      - run: npm run build-storybook
+
+  images:
+    name: Production images build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/api.Dockerfile
+          target: runtime
+          tags: patchbeast-api:prod
+          cache-from: type=gha,scope=api-prod
+          cache-to: type=gha,scope=api-prod,mode=max
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/web.Dockerfile
+          target: runtime
+          tags: patchbeast-web:prod
+          cache-from: type=gha,scope=web-prod
+          cache-to: type=gha,scope=web-prod,mode=max
+
+  e2e:
+    name: Compose smoke + Playwright
+    runs-on: ubuntu-latest
+    needs: [api, web]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - run: cp .env.example .env
+      - run: docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build --wait --wait-timeout 300
+      - run: docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm api python manage.py seed --demo
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test
+        working-directory: apps/web
+      - if: failure()
+        run: docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --tail=200

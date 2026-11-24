@@ -1,0 +1,70 @@
+{% extends "admin/base_site.html" %}
+{% block extrastyle %}{{ block.super }}
+<style>
+  .rq-help{margin:0 0 1rem;color:var(--body-quiet-color);font-size:.9rem}
+  .rq-card{border:1px solid var(--border-color);border-radius:8px;padding:1rem;margin:0 0 1rem;background:var(--body-bg)}
+  .rq-card.rq-active{outline:2px solid #7C5CFF}
+  .rq-meta{display:flex;flex-wrap:wrap;gap:.5rem;font-size:.8rem;margin-bottom:.5rem}
+  .rq-chip{padding:2px 8px;border-radius:999px;border:1px solid var(--border-color)}
+  .rq-reason{color:#b45309;font-size:.85rem;margin:.25rem 0 .75rem}
+  .rq-card input[type=text],.rq-card textarea{width:100%;box-sizing:border-box;margin:.2rem 0 .6rem}
+  .rq-actions{display:flex;gap:.5rem;flex-wrap:wrap}
+  .rq-actions button{cursor:pointer;padding:.5rem 1rem;border-radius:6px;border:1px solid var(--border-color)}
+  .rq-approve{background:#116a45;color:#fff;border-color:#116a45!important}
+  .rq-reject{background:#a3262b;color:#fff;border-color:#a3262b!important}
+  kbd{border:1px solid var(--border-color);border-radius:4px;padding:0 5px;font-size:.8rem}
+</style>{% endblock %}
+{% block content %}
+<p class="rq-help">Keys: <kbd>j</kbd>/<kbd>k</kbd> next/prev · <kbd>a</kbd> approve · <kbd>r</kbd> reject · <kbd>e</kbd> edit summary · <kbd>s</kbd> save edit.
+  {{ items|length }} article(s) and {{ videos|length }} video(s) waiting. Our summary only: never paste source text.</p>
+{% for a in items %}
+<form class="rq-card" id="item-{{ a.pk }}" method="post" action="{% url act_url a.pk %}" data-index="{{ forloop.counter0 }}">
+  {% csrf_token %}
+  <div class="rq-meta">
+    <span class="rq-chip">{{ a.game.name }}</span>
+    <span class="rq-chip">{{ a.source_name|default:"unknown source" }}</span>
+    <span class="rq-chip">topic: {{ a.topic|default:"-" }}</span>
+    <span class="rq-chip">confidence {{ a.confidence|floatformat:2 }}</span>
+    <span class="rq-chip">{{ a.verification }}</span>
+    <a href="{{ a.source_url }}" target="_blank" rel="noopener noreferrer nofollow">open source ↗</a>
+  </div>
+  {% if a.review_reason %}<div class="rq-reason">Why queued: {{ a.review_reason }}</div>{% endif %}
+  <label>Title<input type="text" name="title" value="{{ a.title }}" maxlength="300"></label>
+  <label>Our summary (2-3 lines, original wording)<textarea name="summary" rows="3">{{ a.our_summary }}</textarea></label>
+  <label>Tags (comma separated)<input type="text" name="tags" value="{{ a.tags|join:', ' }}"></label>
+  <div class="rq-actions">
+    <button class="rq-approve" name="action" value="approve" data-key="a">Approve &amp; publish</button>
+    <button name="action" value="save" data-key="s">Save edit</button>
+    <button class="rq-reject" name="action" value="reject" data-key="r">Reject</button>
+  </div>
+</form>
+{% empty %}<p>🎉 Article queue is empty.</p>{% endfor %}
+
+{% if videos %}<h2>Videos</h2>{% endif %}
+{% for v in videos %}
+<form class="rq-card" method="post" action="{% url 'admin:review_video_act' v.pk %}">
+  {% csrf_token %}
+  <div class="rq-meta"><span class="rq-chip">{{ v.game.name }}</span><span class="rq-chip">{{ v.channel }}</span><span class="rq-chip">{{ v.kind }}</span>
+    <a href="https://www.youtube.com/watch?v={{ v.youtube_id }}" target="_blank" rel="noopener noreferrer">watch ↗</a></div>
+  <p>{{ v.title }}</p>
+  <div class="rq-actions"><button class="rq-approve" name="action" value="approve">Publish</button><button class="rq-reject" name="action" value="reject">Reject</button></div>
+</form>
+{% endfor %}
+
+<script>
+(function(){
+  var cards=[].slice.call(document.querySelectorAll('.rq-card[data-index]')), i=0;
+  function focusCard(n){ if(!cards.length)return; i=Math.max(0,Math.min(cards.length-1,n));
+    cards.forEach(function(c,k){c.classList.toggle('rq-active',k===i)}); cards[i].scrollIntoView({block:'center',behavior:'smooth'}); }
+  focusCard(0);
+  document.addEventListener('keydown',function(e){
+    var t=e.target.tagName; var typing=(t==='INPUT'||t==='TEXTAREA');
+    if(e.key==='Escape'){document.activeElement.blur();return}
+    if(typing||e.metaKey||e.ctrlKey||e.altKey||!cards.length)return;
+    if(e.key==='j')focusCard(i+1); else if(e.key==='k')focusCard(i-1);
+    else if(e.key==='e'){e.preventDefault();cards[i].querySelector('textarea').focus()}
+    else if(['a','s','r'].indexOf(e.key)>-1){var b=cards[i].querySelector('[data-key="'+e.key+'"]'); if(b){b.click()}}
+  });
+})();
+</script>
+{% endblock %}

@@ -1,0 +1,5 @@
+{"items": [
+ {"snippet": {"title": "Official Trailer 2", "publishedAt": "2026-11-01T12:00:00Z", "videoOwnerChannelTitle": "Example Studio", "resourceId": {"videoId": "abc123XYZ_-"}},
+  "contentDetails": {"videoId": "abc123XYZ_-", "videoPublishedAt": "2026-11-01T12:00:00Z"}},
+ {"snippet": {"title": "Developer diary", "resourceId": {"videoId": "def456"}}, "contentDetails": {"videoId": "def456"}}
+]}

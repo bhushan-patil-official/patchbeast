@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0"><channel><title>Example Newsroom</title><link>https://news.example.com/</link>
+<item><title>Patch 1.02 now live</title><link>https://www.news.example.com/post/patch-102/?utm_source=rss&amp;ref=x</link>
+<guid>post-102</guid><pubDate>Mon, 02 Nov 2026 10:00:00 GMT</pubDate>
+<description>&lt;p&gt;Version 1.02 is rolling out today with stability fixes and a new graphics option for PC players.&lt;/p&gt;</description></item>
+<item><title>Release date announced for PC</title><link>https://news.example.com/post/pc-date</link>
+<guid>post-pc-date</guid><pubDate>Tue, 03 Nov 2026 09:00:00 GMT</pubDate>
+<description>The PC edition arrives on 2027-03-01 according to the studio announcement.</description></item>
+<item><title></title><link>https://news.example.com/broken</link></item>
+</channel></rss>

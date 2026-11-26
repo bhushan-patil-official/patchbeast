@@ -171,6 +171,29 @@ def post_revalidation(
     r.raise_for_status()
 
 
+def post_indexnow(urls: list[str], client: httpx.Client | None = None) -> bool:
+    """Tell IndexNow engines (Bing, Yandex, Seznam, Naver...) these URLs changed. No-op without a key
+    or on localhost. Google does not use IndexNow: it relies on the sitemap + crawling."""
+    from urllib.parse import urlparse
+
+    key = settings.PB["INDEXNOW_KEY"]
+    host = urlparse(settings.SITE_URL).hostname or ""
+    if not key or not urls or host in ("", "localhost", "127.0.0.1"):
+        return False
+    c = client or httpx.Client(timeout=10)
+    r = c.post(
+        "https://api.indexnow.org/indexnow",
+        json={
+            "host": host,
+            "key": key,
+            "keyLocation": f"{settings.SITE_URL}/indexnow.txt",
+            "urlList": urls[:100],
+        },
+    )
+    r.raise_for_status()
+    return True
+
+
 # ---------- 5xx counter ----------
 def _bucket() -> str:
     return f"5xx:{int(timezone.now().timestamp() // 300)}"

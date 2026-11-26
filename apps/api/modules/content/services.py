@@ -368,3 +368,13 @@ def revalidate_everything() -> int:
         request_revalidation(tags[i : i + 40], paths[i : i + 40])
         chunks += 1
     return chunks
+
+
+def request_indexnow(paths) -> None:
+    """After commit, tell IndexNow search engines which indexable pages changed (no-op without a key)."""
+    if not settings.PB["INDEXNOW_KEY"]:
+        return
+    from .tasks import submit_indexnow
+
+    unique = sorted(set(paths))
+    transaction.on_commit(lambda: submit_indexnow.delay(unique))

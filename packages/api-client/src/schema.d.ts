@@ -233,6 +233,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/patches/latest/": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** @description Newest sourced patches across all games (home page, RSS). */
+        get: operations["v1_patches_latest_list"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/sitemap/": {
         parameters: {
             query?: never;
@@ -376,6 +393,24 @@ export interface components {
             affiliate_categories: string[];
             sections: string[];
             seo: components["schemas"]["Seo"];
+        };
+        LatestPatch: {
+            readonly id: number;
+            readonly platform: string;
+            readonly version: string;
+            /** Format: date */
+            readonly date: string | null;
+            /** Format: uri */
+            readonly notes_url: string;
+            readonly our_summary: string;
+            highlights: string[];
+            /** @description e.g. '603.7 MB' */
+            readonly size_note: string;
+            verification: components["schemas"]["VerificationEnum"];
+            readonly source_count: number;
+            readonly is_placeholder: boolean;
+            game_slug: string;
+            game_name: string;
         };
         Ok: {
             ok: boolean;
@@ -551,6 +586,8 @@ export interface components {
             readonly source_count: number;
             /** Format: date-time */
             readonly published_at: string | null;
+            /** Format: date-time */
+            readonly updated_at: string;
         };
         /**
          * @description * `briefing` - Briefing (one development)
@@ -966,6 +1003,25 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["Ok"];
+                };
+            };
+        };
+    };
+    v1_patches_latest_list: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LatestPatch"][];
                 };
             };
         };

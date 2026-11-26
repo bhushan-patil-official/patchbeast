@@ -160,6 +160,7 @@ PB: dict[str, Any] = {
     "WEBSUB_CALLBACK_BASE": env.websub_callback_base,
     "REVALIDATE_URL": env.revalidate_url,
     "REVALIDATE_SECRET": env.revalidate_secret,
+    "INDEXNOW_KEY": env.indexnow_key,
     "ALERT_EMAIL_TO": env.alert_email_to,
     "TELEGRAM_BOT_TOKEN": env.telegram_bot_token,
     "TELEGRAM_CHAT_ID": env.telegram_chat_id,

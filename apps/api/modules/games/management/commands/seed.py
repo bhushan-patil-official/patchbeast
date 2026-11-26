@@ -1,5 +1,6 @@
 """Seed script. Placeholder data ONLY: nothing here is a claim of fact; every row is flagged and noindex."""
 
+import os
 from datetime import timedelta
 
 from django.core.management.base import BaseCommand
@@ -105,7 +106,7 @@ def seed_demo() -> Game:
         slug="demo-launch",
         defaults={
             "name": "Demo Launch (sample data)", "short_name": "DEMO", "tagline": "Sample data to preview the UI. Not a real game. noindex.",
-            "is_placeholder": True, "allow_index": False, "sort_order": 99,
+            "is_placeholder": True, "allow_index": os.environ.get("DEMO_INDEXABLE") == "1", "sort_order": 99,
             "hub_config": {"platforms": ["pc", "ps5"], "checker": True, "faq": [{"q": "Is this real?", "a": "No. Every item on this page is DEMO data."}]},
         },
     )  # fmt: skip

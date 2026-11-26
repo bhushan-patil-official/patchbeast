@@ -9,7 +9,7 @@ from modules.games.models import Game, Release
 from modules.platform.services import request_revalidation
 
 from .models import Article, Patch, Requirement, Story, Video
-from .services import game_tags
+from .services import game_tags, request_indexnow
 
 
 def _game_paths(game: Game) -> list[str]:
@@ -27,11 +27,13 @@ def _game_paths(game: Game) -> list[str]:
     return paths
 
 
-def _refresh(game: Game | None, *extra_tags: str) -> None:
+def _refresh(game: Game | None, *extra_tags: str, paths: tuple[str, ...] = ()) -> None:
     if game is None:
-        request_revalidation(["news", *extra_tags], ["/news"])
+        request_revalidation(["news", *extra_tags], ["/news", *paths])
         return
-    request_revalidation([*game_tags(game), *extra_tags], _game_paths(game))
+    all_paths = [*_game_paths(game), *paths]
+    request_revalidation([*game_tags(game), *extra_tags], all_paths)
+    request_indexnow(all_paths)
 
 
 @receiver(pre_save, sender=Article)
@@ -59,7 +61,12 @@ def _story(sender, instance, raw=False, **kwargs):
     if raw:
         return
     if instance.status == Story.Status.PUBLISHED or getattr(instance, "_was_public", False):
-        _refresh(instance.game, "news", "stories")
+        _refresh(
+            instance.game,
+            "news",
+            "stories",
+            paths=(f"/games/{instance.game.slug}/news/{instance.slug}",),
+        )
 
 
 @receiver(post_save, sender=Video)
@@ -78,8 +85,12 @@ def _video(sender, instance, raw=False, **kwargs):
 @receiver(post_save, sender=Release)
 @receiver(post_delete, sender=Release)
 def _facts(sender, instance, raw=False, **kwargs):
-    if not raw:
-        _refresh(instance.game)
+    if raw:
+        return
+    extra = ()
+    if isinstance(instance, Patch):
+        extra = (f"/games/{instance.game.slug}/patches/{instance.platform}/{instance.version}",)
+    _refresh(instance.game, paths=extra)
 
 
 @receiver(post_save, sender=Game)

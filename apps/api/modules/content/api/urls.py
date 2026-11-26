@@ -11,6 +11,7 @@ urlpatterns = [
     path("games/<slug:slug>/changes/", views.GameChangesList.as_view()),
     path("games/<slug:slug>/requirements/", views.game_requirements),
     path("ticker/", views.ticker),
+    path("patches/latest/", views.latest_patches),
     path("news/", views.NewsList.as_view()),
     path("stories/", views.StoriesList.as_view()),
     path("games/<slug:slug>/stories/<slug:story>/", views.story_detail),

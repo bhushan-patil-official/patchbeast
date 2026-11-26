@@ -19,6 +19,7 @@ class Env(BaseSettings):
 
     revalidate_url: str = "http://web:3000/internal/revalidate"
     revalidate_secret: str = "dev-revalidate-secret"
+    indexnow_key: str = ""
 
     anthropic_api_key: str = ""
     llm_provider: str = "anthropic"

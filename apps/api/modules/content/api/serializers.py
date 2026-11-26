@@ -157,6 +157,7 @@ class StoryCardSerializer(serializers.ModelSerializer):
             "tags",
             "source_count",
             "published_at",
+            "updated_at",
         ]
         read_only_fields = fields
 
@@ -295,3 +296,12 @@ class StoryDetailSerializer(serializers.Serializer):
     @extend_schema_field(GameCardSerializer)
     def get_game(self, d):
         return GameCardSerializer(d["game"]).data
+
+
+class LatestPatchSerializer(PatchSerializer):
+    game_slug = serializers.CharField(source="game.slug")
+    game_name = serializers.CharField(source="game.name")
+
+    class Meta(PatchSerializer.Meta):
+        fields = [*PatchSerializer.Meta.fields, "game_slug", "game_name"]
+        read_only_fields = fields

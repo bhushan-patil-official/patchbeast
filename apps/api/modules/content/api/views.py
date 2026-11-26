@@ -187,3 +187,10 @@ def story_detail(request, slug: str, story: str):
         "sources": st.sources, "seo": selectors.seo_for_story(g, st),
     }  # fmt: skip
     return Response(s.StoryDetailSerializer(data).data)
+
+
+@extend_schema(responses=s.LatestPatchSerializer(many=True), tags=["games"])
+@api_view(["GET"])
+def latest_patches(request):
+    """Newest sourced patches across all games (home page, RSS)."""
+    return Response(s.LatestPatchSerializer(selectors.latest_patches(8), many=True).data)

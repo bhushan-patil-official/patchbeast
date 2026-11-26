@@ -102,6 +102,23 @@ def seo_subpage(game: Game, kind: str) -> dict:
     return {"indexable": exists, "reason": "" if exists else f"no real {kind} yet"}
 
 
+def latest_patches(limit: int = 6) -> list[Patch]:
+    """Newest real, sourced patches across enabled games (for the home page and the RSS feed)."""
+    out: list[Patch] = []
+    qs = (
+        Patch.objects.filter(is_placeholder=False, game__enabled=True)
+        .select_related("game")
+        .order_by("-date", "-created_at")
+    )
+    for p in qs[: limit * 4]:
+        n = Evidence.objects.filter(subject_kind=SubjectKind.PATCH, subject_id=p.pk).count()
+        if seo_for_patch(p.game, p, n)["indexable"]:
+            out.append(p)
+        if len(out) >= limit:
+            break
+    return out
+
+
 def sitemap_entries() -> list[dict]:
     out: list[dict] = [{"path": "/", "lastmod": None}]
     news = published_articles()
@@ -132,6 +149,8 @@ def sitemap_entries() -> list[dict]:
                         "lastmod": patch.updated_at,
                     }
                 )
+    newest = [e["lastmod"] for e in out if e["lastmod"]]
+    out[0]["lastmod"] = max(newest) if newest else None
     return out
 
 

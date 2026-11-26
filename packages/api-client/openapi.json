@@ -601,6 +601,33 @@
                 }
             }
         },
+        "/api/v1/patches/latest/": {
+            "get": {
+                "operationId": "v1_patches_latest_list",
+                "description": "Newest sourced patches across all games (home page, RSS).",
+                "tags": [
+                    "games"
+                ],
+                "security": [
+                    {}
+                ],
+                "responses": {
+                    "200": {
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/LatestPatch"
+                                    }
+                                }
+                            }
+                        },
+                        "description": ""
+                    }
+                }
+            }
+        },
         "/api/v1/sitemap/": {
             "get": {
                 "operationId": "v1_sitemap_list",
@@ -1088,6 +1115,81 @@
                     "seo_title",
                     "stories",
                     "videos"
+                ]
+            },
+            "LatestPatch": {
+                "type": "object",
+                "properties": {
+                    "id": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "platform": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "version": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date",
+                        "readOnly": true,
+                        "nullable": true
+                    },
+                    "notes_url": {
+                        "type": "string",
+                        "format": "uri",
+                        "readOnly": true
+                    },
+                    "our_summary": {
+                        "type": "string",
+                        "readOnly": true
+                    },
+                    "highlights": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
+                    },
+                    "size_note": {
+                        "type": "string",
+                        "readOnly": true,
+                        "description": "e.g. '603.7 MB'"
+                    },
+                    "verification": {
+                        "$ref": "#/components/schemas/VerificationEnum"
+                    },
+                    "source_count": {
+                        "type": "integer",
+                        "readOnly": true
+                    },
+                    "is_placeholder": {
+                        "type": "boolean",
+                        "readOnly": true
+                    },
+                    "game_slug": {
+                        "type": "string"
+                    },
+                    "game_name": {
+                        "type": "string"
+                    }
+                },
+                "required": [
+                    "date",
+                    "game_name",
+                    "game_slug",
+                    "highlights",
+                    "id",
+                    "is_placeholder",
+                    "notes_url",
+                    "our_summary",
+                    "platform",
+                    "size_note",
+                    "source_count",
+                    "verification",
+                    "version"
                 ]
             },
             "Ok": {
@@ -1683,6 +1785,11 @@
                         "format": "date-time",
                         "readOnly": true,
                         "nullable": true
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time",
+                        "readOnly": true
                     }
                 },
                 "required": [
@@ -1696,6 +1803,7 @@
                     "source_count",
                     "tags",
                     "title",
+                    "updated_at",
                     "verification"
                 ]
             },

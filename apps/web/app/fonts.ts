@@ -18,4 +18,5 @@ export const mono = localFont({
   variable: "--font-mono",
   weight: "100 800",
   display: "swap",
+  preload: false, // only small data text uses it: do not compete with the fonts the hero needs
 });

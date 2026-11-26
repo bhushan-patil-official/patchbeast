@@ -18,11 +18,12 @@ export function hubMetadata(h: Schemas["Hub"]): Metadata {
   const { game } = h;
   const multi = h.platforms.length > 1;
   return pageMetadata({
-    title: h.seo_title || `${game.name}: release date${multi ? "s by platform" : ""}, patches & requirements`,
+    title: h.seo_title || `${game.name}: release dates, patches & PC specs`,
     description:
       h.seo_description ||
       `Sourced release status${multi ? " per platform" : ""}, patch notes, PC requirements and videos for ${game.name}. Every item links to its source and shows how well it is verified.`,
     path: game.path,
+    image: `/og/game/${game.slug}`,
     indexable: h.seo.indexable,
   });
 }
@@ -43,6 +44,9 @@ export function GameHubView({ h }: { h: Schemas["Hub"] }) {
     "@type": "VideoGame",
     name: h.game.name,
     url: absolute(h.game.path),
+    ...(h.game.tagline ? { description: h.game.tagline } : {}),
+    inLanguage: "en",
+    image: absolute(`/og/game/${slug}`),
     ...(live.length ? { gamePlatform: live.map((r) => SCHEMA_PLATFORM[r.platform] ?? r.platform) } : {}),
     ...(earliest ? { datePublished: earliest } : {}),
   };
@@ -50,6 +54,7 @@ export function GameHubView({ h }: { h: Schemas["Hub"] }) {
   return (
     <>
       <JsonLd data={ld} />
+      <JsonLd data={{ "@context": "https://schema.org", "@type": "BreadcrumbList", itemListElement: [{ "@type": "ListItem", position: 1, name: "Launches", item: absolute("/") }, { "@type": "ListItem", position: 2, name: h.game.name, item: absolute(h.game.path) }] }} />
       {h.seo.indexable && h.faq.length > 0 && (
         <JsonLd data={{ "@context": "https://schema.org", "@type": "FAQPage", mainEntity: h.faq.map((f) => ({ "@type": "Question", name: f.q, acceptedAnswer: { "@type": "Answer", text: f.a } })) }} />
       )}

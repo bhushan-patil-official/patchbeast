@@ -1,7 +1,7 @@
 import { pageMetadata } from "@/lib/seo";
 import { CONTACT_EMAIL } from "@/lib/site";
 
-export const metadata = pageMetadata({ title: "Contact and takedowns", description: "Contact Patchbeast, report an error, or send a DMCA / takedown request.", path: "/contact", indexable: true });
+export const metadata = pageMetadata({ title: "Contact and takedowns", description: "Contact Patchbeast, report an error with a source, or send a DMCA / takedown request. We aim to respond within two business days.", path: "/contact", indexable: true });
 
 export default function Page() {
   return (

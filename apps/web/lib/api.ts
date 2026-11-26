@@ -42,6 +42,7 @@ export const api = {
     call(() => client([`game:${slug}`, "videos"]).GET("/api/v1/games/{slug}/videos/", { params: { path: { slug } } })),
   requirements: (slug: string) =>
     call(() => client([`game:${slug}`]).GET("/api/v1/games/{slug}/requirements/", { params: { path: { slug } } })),
+  latestPatches: () => call(() => client(["games"]).GET("/api/v1/patches/latest/")),
   ticker: () => call(() => client(["ticker"]).GET("/api/v1/ticker/")),
   news: (page = 1, game?: string) =>
     call(() =>

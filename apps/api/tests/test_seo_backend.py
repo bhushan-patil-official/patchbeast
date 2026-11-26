@@ -140,9 +140,9 @@ def test_task_submits_only_indexable_paths_once(settings, live, monkeypatch):
     ]
     assert tasks.submit_indexnow(paths) == 2
     assert sent[0] == [
-        "https://patchbeast.com/news",
+        "https://patchbeast.com/",
         "https://patchbeast.com/games/live/patches/ps5/1.0.0",
-    ]  # no /feed, no empty section
+    ]  # not /news (nothing published), /feed, empty sections or admin
     assert tasks.submit_indexnow(paths) == 0  # debounced for 10 minutes
 
 
@@ -166,3 +166,24 @@ def test_no_indexnow_scheduling_without_a_key(
     with django_capture_on_commit_callbacks(execute=True):
         Patch.objects.create(game=live, platform="ps5", version="3.0", our_summary="s")
     assert calls == []
+
+
+def test_story_card_reports_whether_its_page_is_indexable(client, live):
+    src = [
+        {"article_id": 1, "url": "https://a.example.com", "name": "a", "title": "t"},
+        {"article_id": 2, "url": "https://b.example.org", "name": "b", "title": "t"},
+    ]
+    Story.objects.create(
+        game=live,
+        slug="s",
+        title="A briefing title here",
+        status="published",
+        published_at=timezone.now(),
+        blocks=[{"text": "t", "sources": [0, 1]}],
+        sources=src,
+        cluster_key="k",
+    )
+    assert client.get("/api/v1/stories/").json()["results"][0]["indexable"] is True
+    live.allow_index = False
+    live.save()
+    assert client.get("/api/v1/stories/").json()["results"][0]["indexable"] is False

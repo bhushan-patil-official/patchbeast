@@ -33,6 +33,7 @@ make createsuperuser
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) + [docs/adr/](docs/adr) | modules, layering, ports/adapters, pipeline, safeguards |
 | [docs/RUNBOOK.md](docs/RUNBOOK.md) | first deploy, updates, rollback, backups/restore, kill switch, **weekly 2-4 h checklist**, Vercel option |
 | [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md) | tokens, components, motion, accessibility, budgets |
+| [docs/SEO.md](docs/SEO.md) | what is built, launch checklist, weekly routine, honest expectations |
 | [DECISIONS.md](DECISIONS.md) | autonomous decisions and assumptions |
 
 ## Layout

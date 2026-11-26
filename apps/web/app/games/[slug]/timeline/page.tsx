@@ -19,6 +19,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title: `${hub.data.game.name} timeline: every change, with sources`,
     description: `The full change log for ${hub.data.game.name}: release dates, patches and updates, newest first. Every entry shows its source and verification status.`,
     path: `/games/${slug}/timeline`,
+    image: `/og/game/${slug}`,
     indexable: hub.data.seo.indexable && ch.ok && ch.data.count > 0 && !page,
   });
 }

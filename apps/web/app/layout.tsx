@@ -11,8 +11,12 @@ export const metadata: Metadata = {
   title: { default: `${SITE_NAME}: launch tracker, PC first`, template: `%s · ${SITE_NAME}` },
   description: SITE_TAGLINE,
   applicationName: SITE_NAME,
-  alternates: { canonical: "/" },
-  verification: process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } : undefined,
+  // no site-wide canonical: every indexable page sets its own; noindex pages must not canonicalise to the home page
+  alternates: { types: { "application/rss+xml": [{ url: "/rss.xml", title: "Patchbeast: briefings and updates" }] } },
+  verification: {
+    ...(process.env.NEXT_PUBLIC_GSC_VERIFICATION ? { google: process.env.NEXT_PUBLIC_GSC_VERIFICATION } : {}),
+    ...(process.env.NEXT_PUBLIC_BING_VERIFICATION ? { other: { "msvalidate.01": process.env.NEXT_PUBLIC_BING_VERIFICATION } } : {}),
+  },
   openGraph: { siteName: SITE_NAME, type: "website" },
 };
 export const viewport: Viewport = { themeColor: "#0B0D10", colorScheme: "dark light" };

@@ -1,6 +1,6 @@
 import { pageMetadata } from "@/lib/seo";
 
-export const metadata = pageMetadata({ title: "Affiliate disclosure", description: "How Patchbeast earns money and how it affects what we show.", path: "/affiliate-disclosure", indexable: true });
+export const metadata = pageMetadata({ title: "Affiliate disclosure", description: "How Patchbeast may earn affiliate commissions, how such links are marked, and why they never affect verification labels or what we report.", path: "/affiliate-disclosure", indexable: true });
 
 export default function Page() {
   return (

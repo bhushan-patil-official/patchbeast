@@ -5,6 +5,7 @@ import { PlaceholderNotice } from "@/components/Cards";
 import { Breadcrumbs, GameNav } from "@/components/GameNav";
 import { VideoEmbed } from "@/components/VideoEmbed";
 import { api } from "@/lib/api";
+import { JsonLd } from "@/components/JsonLd";
 import { pageMetadata } from "@/lib/seo";
 
 export const revalidate = 300;
@@ -23,6 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${r.data.game.name} trailers and videos`,
     description: `Official trailers and videos for ${r.data.game.name}, linked from their original channels.`,
     path: `/games/${slug}/videos`,
+    image: `/og/game/${slug}`,
     indexable: r.data.seo.indexable,
   });
 }
@@ -37,6 +39,21 @@ export default async function VideosPage({ params }: Props) {
   const { game, items, seo } = r.data;
   return (
     <>
+      {seo.indexable && items.length > 0 && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@graph": items.map((v) => ({
+              "@type": "VideoObject",
+              name: v.title,
+              description: `${v.title}: video from ${v.channel || "YouTube"} about ${game.name}.`,
+              thumbnailUrl: `https://i.ytimg.com/vi/${v.youtube_id}/hqdefault.jpg`,
+              embedUrl: `https://www.youtube.com/embed/${v.youtube_id}`,
+              ...(v.published_at ? { uploadDate: v.published_at } : {}),
+            })),
+          }}
+        />
+      )}
       <PlaceholderNotice show={!seo.indexable} />
       <Breadcrumbs crumbs={[{ name: "Launches", href: "/" }, { name: game.name, href: game.path }, { name: "Videos" }]} />
       <h1 className="font-display text-3xl font-bold tracking-tight">{game.name}: trailers &amp; videos</h1>

@@ -34,5 +34,6 @@ def short_label(platform: str) -> str:
 RESERVED_PATHS = {
     "games", "news", "feed", "about", "privacy", "terms", "contact", "affiliate-disclosure",
     "newsletter", "internal", "api", "admin", "static", "sitemap.xml", "robots.txt", "icon.svg",
-    "opengraph-image", "healthz", "metrics", "hooks", "_next",
+    "opengraph-image", "healthz", "metrics", "hooks", "_next", "og", "rss.xml", "indexnow.txt",
+    "editorial-policy", "favicon.ico", "manifest.webmanifest",
 }  # fmt: skip

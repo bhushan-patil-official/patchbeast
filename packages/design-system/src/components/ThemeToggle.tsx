@@ -26,8 +26,8 @@ export function ThemeToggle({ className }: { className?: string }) {
     <button
       type="button"
       onClick={toggle}
-      aria-pressed={theme === "light"}
-      aria-label="Light theme"
+      // accessible name starts with the visible label (WCAG 2.5.3 Label in Name)
+      aria-label={`${theme === "light" ? "Light" : "Dark"} theme, switch to ${theme === "light" ? "dark" : "light"}`}
       className={cn(
         "pb-focus inline-flex h-8 items-center gap-2 rounded border border-line bg-surface-2 px-2.5 text-xs text-fg-muted hover:text-fg",
         className,

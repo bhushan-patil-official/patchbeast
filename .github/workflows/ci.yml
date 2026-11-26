@@ -106,5 +106,11 @@ jobs:
       - run: npx playwright install --with-deps chromium
       - run: npx playwright test
         working-directory: apps/web
+      - name: SEO crawl with indexable demo pages (patch page, briefing, videos...)
+        run: |
+          docker compose -f docker-compose.yml -f docker-compose.dev.yml run --rm -e DEMO_INDEXABLE=1 api python manage.py seed --demo
+          sleep 20   # the worker refreshes the site pages after the game changes
+          npx playwright test e2e/seo.spec.ts
+        working-directory: apps/web
       - if: failure()
         run: docker compose -f docker-compose.yml -f docker-compose.dev.yml logs --tail=200

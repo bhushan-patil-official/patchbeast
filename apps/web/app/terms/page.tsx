@@ -1,6 +1,6 @@
 import { pageMetadata } from "@/lib/seo";
 
-export const metadata = pageMetadata({ title: "Terms of use", description: "Terms for using Patchbeast.", path: "/terms", indexable: true });
+export const metadata = pageMetadata({ title: "Terms of use", description: "The terms for using Patchbeast: information not advice, sources and attribution, acceptable use and liability.", path: "/terms", indexable: true });
 
 export default function Page() {
   return (

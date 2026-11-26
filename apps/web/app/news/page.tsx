@@ -2,7 +2,8 @@ import Link from "next/link";
 import { NewsCard, Degraded } from "@/components/Cards";
 import { StoryCard } from "@/components/StoryCard";
 import { api } from "@/lib/api";
-import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { absolute, pageMetadata } from "@/lib/seo";
 
 export const revalidate = 300;
 type Props = { searchParams: Promise<{ page?: string; game?: string }> };
@@ -13,7 +14,7 @@ export async function generateMetadata({ searchParams }: Props) {
   // Only the unfiltered first page is an index target; filtered/paginated views are navigation aids.
   const has = (r.ok && r.data.count > 0) || (s.ok && s.data.count > 0);
   return pageMetadata({
-    title: "News and briefings: curated, with sources",
+    title: "News and briefings",
     description: "Our own briefings and roundups plus hand-picked links, filterable by game. Every item shows its sources and verification status.",
     path: "/news",
     indexable: has && !page && !game,
@@ -41,6 +42,20 @@ export default async function News({ searchParams }: Props) {
 
   return (
     <>
+      {!game && !sp.page && stories.ok && stories.data.results.length > 0 && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "CollectionPage",
+            name: "News and briefings",
+            url: absolute("/news"),
+            mainEntity: {
+              "@type": "ItemList",
+              itemListElement: stories.data.results.slice(0, 10).map((s, i) => ({ "@type": "ListItem", position: i + 1, url: absolute(`/games/${s.game_slug}/news/${s.slug}`), name: s.title })),
+            },
+          }}
+        />
+      )}
       <h1 className="font-display text-3xl font-bold tracking-tight">{current ? `${current.name}: news` : "News"}</h1>
       <p className="mt-2 max-w-prose text-fg-muted">
         Briefings and roundups we write from several linked sources, plus hand-picked links. A person approves every item.

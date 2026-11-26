@@ -142,6 +142,7 @@ class StoryCardSerializer(serializers.ModelSerializer):
     verification = serializers.ChoiceField(choices=Verification.choices)
     tags = serializers.ListField(child=serializers.CharField())
     source_count = serializers.SerializerMethodField()
+    indexable = serializers.SerializerMethodField()
 
     class Meta:
         model = Story
@@ -158,11 +159,16 @@ class StoryCardSerializer(serializers.ModelSerializer):
             "source_count",
             "published_at",
             "updated_at",
+            "indexable",
         ]
         read_only_fields = fields
 
     def get_source_count(self, s: Story) -> int:
         return len(s.sources)
+
+    def get_indexable(self, s: Story) -> bool:
+        """Whether this briefing's page is in the sitemap (used to keep the RSS feed consistent)."""
+        return bool(selectors.seo_for_story(s.game, s)["indexable"])
 
 
 class FaqSerializer(serializers.Serializer):

@@ -1,7 +1,8 @@
+import Link from "next/link";
 import { pageMetadata } from "@/lib/seo";
 import { CONTACT_EMAIL } from "@/lib/site";
 
-export const metadata = pageMetadata({ title: "About Patchbeast", description: "What Patchbeast is, how we verify information, and how our bot behaves.", path: "/about", indexable: true });
+export const metadata = pageMetadata({ title: "About", description: "Patchbeast is an independent, PC-first tracker for big game launches: sourced release dates by platform, patches, requirements and briefings, and how our bot behaves.", path: "/about", indexable: true });
 
 export default function Page() {
   return (
@@ -16,6 +17,7 @@ export default function Page() {
         <li>We never show a countdown for a rumoured date. The clock shows &ldquo;Date unconfirmed&rdquo; until a date is reported or confirmed.</li>
       </ul>
       <h2>Verification</h2>
+      <p>Read the full <Link href="/editorial-policy">editorial policy</Link> for how we verify, how AI is used, and how to request a correction.</p>
       <p><strong>Confirmed</strong> means two independent sources, or a video. <strong>Reported</strong> means one linked source. <strong>Rumour</strong> means unverified.</p>
       <h2 id="bot">Our bot</h2>
       <p>We read official RSS feeds and APIs using the user agent <code>PatchbeastBot/1.0</code>, with conditional requests (ETag / If-Modified-Since), low frequency, and respect for robots.txt. If you run a source and want us to stop, email <a href={`mailto:${CONTACT_EMAIL}`}>{CONTACT_EMAIL}</a>.</p>

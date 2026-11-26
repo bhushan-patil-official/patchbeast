@@ -34,7 +34,7 @@ test("flagship page: per-platform rows, known/unknown, pinned FAQ, per-game sign
   await expect(page.getByRole("heading", { name: "FAQ" })).toBeVisible();
   await expect(page.getByRole("heading", { name: /Get .* changes by email/ })).toBeVisible();
   // the page title is config-driven (hub_config.seo_title)
-  await expect(page).toHaveTitle(/Grand Theft Auto VI tracker: release dates by platform/);
+  await expect(page).toHaveTitle(/GTA VI release dates, patches & PC requirements · Patchbeast/);
   await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", /\/gta-6-pc$/);
 });
 
@@ -136,7 +136,7 @@ test("legal pages exist; revalidate endpoint is protected", async ({ page, reque
 
 test("theme toggle switches to light and persists", async ({ page }) => {
   await page.goto("/");
-  await page.getByRole("button", { name: "Light theme" }).click();
+  await page.getByRole("button", { name: /theme, switch to/ }).click();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");
   await page.reload();
   await expect(page.locator("html")).toHaveAttribute("data-theme", "light");

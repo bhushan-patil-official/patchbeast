@@ -1,6 +1,6 @@
 import { ImageResponse } from "next/og";
 
-export const alt = "Patchbeast: PC launch tracker";
+export const alt = "Patchbeast: launch tracker, PC first";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 

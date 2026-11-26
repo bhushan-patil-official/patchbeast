@@ -32,6 +32,10 @@ Owner time budget: **2-4 hours/week**. Everything runs unattended; you review, c
 10. Uptime monitor (UptimeRobot/Better Stack, free): check `https://yourdomain/healthz` (expects 200, 503 on db/redis failure).
 11. Search Console: add the property, put the token in `NEXT_PUBLIC_GSC_VERIFICATION`, `make prod-up`, verify, submit `https://yourdomain/sitemap.xml`.
 
+### SEO setup (once) and weekly
+
+Follow the launch checklist in [docs/SEO.md](SEO.md): `www` CNAME, Search Console + Bing Webmaster (submit `sitemap.xml`), `INDEXNOW_KEY` (`openssl rand -hex 16`, in `.env`, then `make prod-up`; the key must show at `https://<domain>/indexnow.txt`), `NEXT_PUBLIC_SAME_AS`, PageSpeed Insights. Weekly: Search Console *Pages* and *Performance*, add the spellings people search to game aliases/FAQ.
+
 ### Add real sources (the seed ships disabled placeholders)
 
 Admin → Sources → edit/add (always prefer official RSS/APIs; see each site's terms):

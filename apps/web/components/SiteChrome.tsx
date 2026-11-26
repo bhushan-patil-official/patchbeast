@@ -51,6 +51,7 @@ export function SiteFooter() {
         </div>
         <nav aria-label="Footer" className="grid grid-cols-2 gap-2">
           <Link className={link} href="/about">About</Link>
+          <Link className={link} href="/editorial-policy">Editorial policy</Link>
           <Link className={link} href="/privacy">Privacy</Link>
           <Link className={link} href="/terms">Terms</Link>
           <Link className={link} href="/affiliate-disclosure">Affiliate disclosure</Link>

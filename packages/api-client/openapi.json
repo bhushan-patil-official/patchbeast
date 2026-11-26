@@ -1790,6 +1790,11 @@
                         "type": "string",
                         "format": "date-time",
                         "readOnly": true
+                    },
+                    "indexable": {
+                        "type": "boolean",
+                        "description": "Whether this briefing's page is in the sitemap (used to keep the RSS feed consistent).",
+                        "readOnly": true
                     }
                 },
                 "required": [
@@ -1797,6 +1802,7 @@
                     "game_name",
                     "game_slug",
                     "id",
+                    "indexable",
                     "kind",
                     "published_at",
                     "slug",

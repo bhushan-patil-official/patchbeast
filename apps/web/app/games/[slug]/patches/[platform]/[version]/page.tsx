@@ -6,9 +6,16 @@ import { toEntry, PlaceholderNotice } from "@/components/Cards";
 import { Breadcrumbs, GameNav } from "@/components/GameNav";
 import { api } from "@/lib/api";
 import { platformShort } from "@/lib/platforms";
-import { pageMetadata } from "@/lib/seo";
+import { JsonLd } from "@/components/JsonLd";
+import { absolute, pageMetadata } from "@/lib/seo";
+import { SITE_NAME } from "@/lib/site";
 
 export const revalidate = 300;
+export const dynamicParams = true;
+/** On-demand ISR: pages are generated on first request and then served from the cache. */
+export async function generateStaticParams() {
+  return [];
+}
 type Props = { params: Promise<{ slug: string; platform: string; version: string }> };
 
 const hostOf = (u: string) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return u; } };
@@ -28,6 +35,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${game.name} update ${patch.version} (${plat}): patch notes summary`,
     description: `${lead}. Our summary of ${game.name} update ${patch.version} on ${plat}, with sources and verification status.`.slice(0, 300),
     path: `/games/${slug}/patches/${platform}/${encodeURIComponent(v)}`,
+    image: `/og/patch/${slug}/${platform}/${encodeURIComponent(v)}`,
+    type: "article",
+    publishedTime: patch.date,
     indexable: seo.indexable,
   });
 }
@@ -45,6 +55,23 @@ export default async function PatchDetail({ params }: Props) {
   const multi = game.platforms.length > 1;
   return (
     <>
+      {seo.indexable && (
+        <JsonLd
+          data={{
+            "@context": "https://schema.org",
+            "@type": "Article",
+            headline: `${game.name} update ${patch.version} (${plat}): patch notes summary`,
+            description: patch.highlights.length ? patch.highlights.slice(0, 3).join("; ") : patch.our_summary,
+            ...(patch.date ? { datePublished: `${patch.date}T12:00:00Z` } : {}),
+            mainEntityOfPage: absolute(`/games/${slug}/patches/${platform}/${encodeURIComponent(v)}`),
+            image: absolute(`/og/patch/${slug}/${platform}/${encodeURIComponent(v)}`),
+            author: { "@type": "Organization", name: SITE_NAME },
+            publisher: { "@id": absolute("/#organization") },
+            about: { "@type": "VideoGame", name: game.name, gamePlatform: plat },
+            citation: sources.map((x) => x.url),
+          }}
+        />
+      )}
       <PlaceholderNotice show={!seo.indexable} />
       <Breadcrumbs crumbs={[{ name: "Launches", href: "/" }, { name: game.name, href: game.path }, { name: "Patches", href: `/games/${slug}/patches` }, { name: `${patch.version}${multi ? ` (${platformShort(patch.platform)})` : ""}` }]} />
       <h1 className="font-display text-3xl font-bold tracking-tight">{game.name}: update {patch.version}{multi ? ` on ${plat}` : ""}</h1>

@@ -9,6 +9,10 @@ const config: NextConfig = {
     : {}),
   transpilePackages: ["@patchbeast/design-system", "@patchbeast/api-client"],
   poweredByHeader: false,
+  // Put <title>/<meta description>/canonical in the initial <head> for EVERY crawler. By default Next streams
+  // metadata into <body> for user agents it does not recognise as bots (Bing, social scrapers, AI crawlers...).
+  htmlLimitedBots: /.*/,
+  experimental: { inlineCss: true }, // inline the (small) CSS: removes a render-blocking request
   reactStrictMode: true,
   async headers() {
     return [

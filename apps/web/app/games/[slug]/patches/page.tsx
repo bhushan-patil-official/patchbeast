@@ -26,6 +26,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title: `${r.data.game.name} patch notes tracker`,
     description: `Every ${r.data.game.name} patch by platform with version, date, our short summary and a link to the official notes.`,
     path: `/games/${slug}/patches`,
+    image: `/og/game/${slug}`,
     indexable: r.data.seo.indexable && !platform, // filtered views are not separate index targets
   });
 }

@@ -588,6 +588,8 @@ export interface components {
             readonly published_at: string | null;
             /** Format: date-time */
             readonly updated_at: string;
+            /** @description Whether this briefing's page is in the sitemap (used to keep the RSS feed consistent). */
+            readonly indexable: boolean;
         };
         /**
          * @description * `briefing` - Briefing (one development)

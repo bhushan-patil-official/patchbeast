@@ -19,6 +19,7 @@ export async function generateMetadata({ params, searchParams }: Props): Promise
     title: `${hub.data.game.name} news: curated, with sources`,
     description: `Hand-picked ${hub.data.game.name} news. Our own summary plus a link to the original source.`,
     path: `/games/${slug}/news`,
+    image: `/og/game/${slug}`,
     indexable: hub.data.seo.indexable && news.ok && news.data.count > 0 && !page,
   });
 }

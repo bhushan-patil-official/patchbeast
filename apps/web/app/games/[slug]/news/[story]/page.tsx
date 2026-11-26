@@ -10,6 +10,10 @@ import { absolute, pageMetadata } from "@/lib/seo";
 import { SITE_NAME } from "@/lib/site";
 
 export const revalidate = 300;
+export const dynamicParams = true;
+export async function generateStaticParams() {
+  return [];
+}
 type Props = { params: Promise<{ slug: string; story: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -20,6 +24,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: r.data.story.title,
     description: r.data.story.dek || r.data.story.title,
     path: `/games/${slug}/news/${story}`,
+    image: `/og/story/${slug}/${story}`,
+    type: "article",
+    publishedTime: r.data.story.published_at,
+    modifiedTime: r.data.story.updated_at,
     indexable: r.data.seo.indexable,
   });
 }
@@ -43,9 +51,14 @@ export default async function StoryPage({ params }: Props) {
             headline: s.title,
             description: s.dek,
             datePublished: s.published_at,
+            dateModified: s.updated_at,
+            image: absolute(`/og/story/${slug}/${story}`),
+            articleSection: game.name,
+            wordCount: blocks.reduce((n, b) => n + b.text.split(/\s+/).length, 0),
+            inLanguage: "en",
             mainEntityOfPage: absolute(path),
             author: { "@type": "Organization", name: SITE_NAME },
-            publisher: { "@type": "Organization", name: SITE_NAME },
+            publisher: { "@id": absolute("/#organization") },
             about: { "@type": "VideoGame", name: game.name },
             citation: sources.map((x) => x.url),
           }}

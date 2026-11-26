@@ -32,7 +32,7 @@ def seed_anchor() -> Game:
                 "sections": ["release", "requirements", "patches", "videos", "news"],
                 "checker": True,
                 "affiliate_categories": ["gpu", "ssd", "ram"],
-                "seo_title": "Grand Theft Auto VI tracker: release dates by platform, patches and PC requirements",
+                "seo_title": "GTA VI release dates, patches & PC requirements",
                 "seo_description": "A sourced tracker for Grand Theft Auto VI: release status per platform with verification, patch notes, PC requirements and videos. Nothing is shown without a source.",
                 "faq": [
                     {

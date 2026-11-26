@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     title: `${r.data.game.name} PC requirements and "can my PC run it" checker`,
     description: `Minimum vs recommended PC requirements for ${r.data.game.name}, with a client-side checker. Nothing you pick leaves your browser.`,
     path: `/games/${slug}/requirements`,
+    image: `/og/game/${slug}`,
     indexable: r.data.seo.indexable,
   });
 }

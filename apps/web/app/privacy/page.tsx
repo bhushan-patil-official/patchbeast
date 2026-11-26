@@ -2,7 +2,7 @@ import Link from "next/link";
 import { pageMetadata } from "@/lib/seo";
 import { CONTACT_EMAIL } from "@/lib/site";
 
-export const metadata = pageMetadata({ title: "Privacy policy", description: "How Patchbeast handles data: analytics, newsletter, logs.", path: "/privacy", indexable: true });
+export const metadata = pageMetadata({ title: "Privacy policy", description: "How Patchbeast handles data: cookieless analytics, the double opt-in newsletter, short-lived server logs, and third parties such as YouTube.", path: "/privacy", indexable: true });
 
 export default function Page() {
   return (
